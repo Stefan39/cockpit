@@ -20,7 +20,7 @@ Laufen die Agenten schon als Coolify-Service (mit Traefik statt eigenem Caddy), 
   Server. Caddy holt das Zertifikat selbst. Die Domain steht mit der Anlage fest: Ein Wechsel ist eine Migration,
   keine Einstellung (Abschnitt 13.3), weil Sitzungs-Cookies und später die Push-Abos am Ursprung hängen.
 - **Mail:** ein eigenes App-Passwort dieser Instanz auf mailcow, nicht das Passwort eines Postfachs.
-- **Ein Release existiert:** Version und Digest stehen im GitHub-Release (siehe README, „Release“). Der Digest gilt für
+- **Ein Release existiert:** Version und Digest stehen im GitHub-Release (siehe Handbuch, „Release“). Der Digest gilt für
   amd64 und arm64 (seit COPI-86); ältere Releases gibt es nur für amd64.
 
 ## 1. Lese-Token für GHCR (einmal je Server)
@@ -156,7 +156,7 @@ docker compose run --rm cockpit node dist/cli/index.js migrieren --status
 
 `run --rm`, nicht `exec`: Das Cockpit **startet ohne Schema nicht** (Exit 3, mit Meldung), es gäbe also keinen
 laufenden Container. `migrieren` ist beliebig oft wiederholbar; ist die Datenbank auf dem Stand, tut es nichts.
-Der letzte Aufruf darf nichts „ausstehend“ mehr zeigen. Mehr dazu in der README, „Schema und Migrationen“.
+Der letzte Aufruf darf nichts „ausstehend“ mehr zeigen. Mehr dazu im Handbuch, „Schema und Migrationen“.
 
 ## 6. Erster Zugang
 
@@ -246,7 +246,7 @@ Migrationen sind additiv; ein Cockpit, das weniger Migrationen kennt, startet mi
 zurück muss man nicht suchen: Der vorherige Digest steht im Antrag.
 
 Erst wenn das nicht reicht, wird die Datenbank zurückgenommen — sie **löscht dabei Daten**. Vorgehen und
-Warnungen stehen in der README unter „Rückwärts: wann, von wem, womit“.
+Warnungen stehen im Handbuch unter „Rückwärts: wann, von wem, womit“.
 
 ## Was hier bewusst nicht vorkommt
 

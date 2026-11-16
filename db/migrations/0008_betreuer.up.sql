@@ -61,7 +61,7 @@ CREATE UNIQUE INDEX "user_hoechstens_ein_betreuer"
 --    `cockpit.betreuer_aenderung` auf `ja` (transaktionslokal, verfällt am Ende).
 --    Das ist eine Markierung gegen Versehen, keine Zugriffskontrolle: wer SQL auf
 --    diese Datenbank ausführen kann, kann sie setzen. Das ist gewollt und
---    im README als bewusster Handgriff beschrieben.
+--    im Handbuch als bewusster Handgriff beschrieben.
 CREATE FUNCTION "cockpit"."betreuer_bleibt_bestehen"()
 RETURNS trigger
 LANGUAGE plpgsql

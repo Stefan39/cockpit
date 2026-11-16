@@ -300,9 +300,9 @@ describe('Die Datei der Entwicklung liegt im Repo, aber nie in Git oder im Image
   });
 });
 
-describe('Der Log verweist auf das README', () => {
+describe('Der Log verweist auf das Handbuch', () => {
   it('hat den Abschnitt „Auth-Geheimnis", auf den Hinweis und Log zeigen', () => {
-    const readme = readFileSync(path.join(wurzel, 'README.md'), 'utf8');
+    const readme = readFileSync(path.join(wurzel, 'docs/handbuch.md'), 'utf8');
 
     expect(readme).toMatch(/^### Auth-Geheimnis/m);
     expect(readFileSync(path.join(wurzel, '.env.example'), 'utf8')).toContain('.cockpit-dev-secret');

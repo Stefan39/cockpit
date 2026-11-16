@@ -44,8 +44,8 @@ describe('Build-Layout', () => {
     expect(existsSync(quelleZu(start))).toBe(true);
   });
 
-  it('nennt in der README das Server-Kommando dort, wo es im Image liegt', () => {
-    const readme = readFileSync('README.md', 'utf8');
+  it('nennt im Handbuch das Server-Kommando dort, wo es im Image liegt', () => {
+    const readme = readFileSync('docs/handbuch.md', 'utf8');
     const genannt = [...readme.matchAll(/node (dist\/[\w/]+\.js)/g)].map((treffer) => treffer[1] ?? '');
 
     expect(genannt).toContain('dist/cli/index.js');

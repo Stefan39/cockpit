@@ -207,7 +207,7 @@ export function cockpitStarten(erweiterungen: readonly Erweiterung[] = []): void
    * Cockpit nicht — und sagt, was fehlt und was zu tun ist, statt mit einem SQL-Fehler
    * (`relation "cockpit.user" does not exist`) mitten im Start zu enden. Es migriert nicht selbst:
    * ein Image-Update soll die Datenbank nicht ohne Freigabe verändern (ADR 13.1); der Schritt ist der
-   * Befehl `migrieren` (siehe README, „Schema und Migrationen").
+   * Befehl `migrieren` (siehe Handbuch, „Schema und Migrationen").
    */
   async function schemaPruefen(): Promise<void> {
     const ergebnis = await startpruefung(pool);

@@ -85,7 +85,7 @@ const CODE_ABGELEHNT = 'Der Code stimmt nicht.';
  */
 const GEHEIMNIS_HINWEIS =
   'Die Prüfung ist selbst gescheitert, das war kein falscher Code. Meist passt BETTER_AUTH_SECRET nicht mehr ' +
-  'zu den gespeicherten Schlüsseln (Neustart der Entwicklung ohne festes Geheimnis?). Siehe README, „Auth-Geheimnis".';
+  'zu den gespeicherten Schlüsseln (Neustart der Entwicklung ohne festes Geheimnis?). Siehe Handbuch, „Auth-Geheimnis".';
 
 /** Sechs Ziffern sind ein TOTP-Code, alles andere wird als Ersatzcode geprüft. */
 const TOTP_FORM = /^\d{6}$/;

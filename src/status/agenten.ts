@@ -9,7 +9,7 @@
  *
  * Das Inventar kennt keine Sichtbarkeit je Agent (anders als ein Befund mit `kundensichtbar`). Deshalb gilt
  * für das, was der Admin-Agent meldet: `rolle`, `grenzen` und `zeitplan` sind **Klartext für den Kunden**
- * (Vertrag in der README, „Inventar melden"). Das Cockpit übersetzt nichts.
+ * (Vertrag im Handbuch, „Inventar melden"). Das Cockpit übersetzt nichts.
  *
  * Nichts wird berechnet: der Zeitplan ist Freitext des Agenten (kein Cron, kein „nächster Lauf"), denn das
  * Cockpit prüft und plant nichts selbst (ADR 4).

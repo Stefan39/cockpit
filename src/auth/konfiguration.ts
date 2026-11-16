@@ -176,7 +176,7 @@ export function geheimnisBesorgen(env: CockpitEnv, optionen: GeheimnisOptionen =
     optionen.hinweis?.(
       `BETTER_AUTH_SECRET ist nicht gesetzt, und das Geheimnis der Entwicklung konnte nicht gespeichert werden ` +
         `(${dateifehlerCode(fehler) ?? 'unbekannter Fehler'} bei ${datei}): es gilt nur für diesen Prozess. Mit jedem ` +
-        'Neustart werden Sitzungen und TOTP-Schlüssel ungültig. Abhilfe: BETTER_AUTH_SECRET setzen (README, „Auth-Geheimnis").',
+        'Neustart werden Sitzungen und TOTP-Schlüssel ungültig. Abhilfe: BETTER_AUTH_SECRET setzen (Handbuch, „Auth-Geheimnis").',
     );
     return neu;
   }

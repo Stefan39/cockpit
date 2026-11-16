@@ -19,7 +19,7 @@
 #   docker compose up -d cockpit
 #
 # Ausführung durch den Betreuer bzw. das Werkzeug `cockpit-update`, nach der Freigabe des Updates;
-# das Cockpit migriert nicht von selbst. Rückwärts: README, „Schema und Migrationen".
+# das Cockpit migriert nicht von selbst. Rückwärts: Handbuch, „Schema und Migrationen".
 
 services:
   cockpit:

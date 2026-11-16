@@ -10,7 +10,7 @@
 #
 # tests=false nur, wenn ausschließlich Markdown geändert ist. Andere Dateien unter docs/ (beispiele/*.sql, *.yaml)
 # lesen die Datenbanktests ein, sie zählen deshalb als Code. Auch bei tests=false laufen die Tests, die Markdown
-# lesen (Routentabelle im README, API-Verträge), siehe ci.yaml.
+# lesen (Routentabelle im Handbuch, API-Verträge), siehe ci.yaml.
 # docker=true, wenn etwas geändert ist, das ins Image kommt oder es baut. .github/ zählt immer voll: eine geänderte
 # CI soll sich selbst einmal ganz durchlaufen.
 # Ohne Eingabe (Änderungen unbekannt) läuft alles.
