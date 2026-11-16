@@ -29,6 +29,9 @@
     "test/global-setup.ts",
     "test/hilfen.ts",
     "test/testdatenbank.ts",
+    "test/global-setup-assets.ts",
+    "test/webauthn-authenticator.ts",
+    "test/qr-lesen.ts",
     "tsconfig.build.json",
     "tsconfig.json",
     "src"
