@@ -387,12 +387,15 @@ export function rueckwege(html: string): { href: string; ziel: string }[] {
 }
 
 /** Die Views des Demo-Moduls Eingang (`docs/demo`): die Modul-View und seit COPI-110 die Anhang-View. */
-const EINGANG_VIEWS = ['docs/demo/v_modul_eingang.sql', 'docs/demo/v_modul_eingang_anhaenge.sql'].map((datei) => readFileSync(datei, 'utf8'));
+const EINGANG_VIEW_DATEIEN = ['docs/demo/v_modul_eingang.sql', 'docs/demo/v_modul_eingang_anhaenge.sql'];
 
-/** Legt die Views des Beispiel-Moduls Eingang an; die Fachmigrationen müssen schon eingespielt sein. */
+/**
+ * Legt die Views des Beispiel-Moduls Eingang an; die Fachmigrationen müssen schon eingespielt sein. Die Dateien werden erst
+ * hier gelesen, nicht beim Import: Verbraucher, die diese Hilfen als Paket laden (COPI-250), haben `docs/demo` nicht.
+ */
 export async function eingangViewsAnlegen(pool: pg.Pool): Promise<void> {
-  for (const sql of EINGANG_VIEWS) {
-    await pool.query(sql);
+  for (const datei of EINGANG_VIEW_DATEIEN) {
+    await pool.query(readFileSync(datei, 'utf8'));
   }
 }
 
