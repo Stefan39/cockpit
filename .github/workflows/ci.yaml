@@ -119,7 +119,7 @@ jobs:
             console.log(z.join("\n"));
           ' | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # Auch ein Doku-PR kann Tests brechen: die Routentabelle im README und die API-Verträge unter docs/ werden
+      # Auch ein Doku-PR kann Tests brechen: die Routentabelle im Handbuch und die API-Verträge unter docs/ werden
       # gegen den Code geprüft. Es laufen die Testdateien, die eine Markdown-Datei nennen.
       - name: Gate 3 — Tests, die Markdown lesen
         if: ${{ steps.umfang.outputs.tests != 'true' }}

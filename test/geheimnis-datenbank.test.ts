@@ -229,7 +229,7 @@ describe.skipIf(!datenbankUrl)('Auth-Geheimnis (echte Datenbank)', () => {
       expect(eintraege).toHaveLength(1);
       expect(eintraege[0]?.hinweis).toMatch(/BETTER_AUTH_SECRET/);
       expect(eintraege[0]?.hinweis).toMatch(/gespeicherten/);
-      expect(eintraege[0]?.hinweis).toMatch(/README/);
+      expect(eintraege[0]?.hinweis).toMatch(/Handbuch/);
 
       // Und nichts Geheimes: weder Code noch Schlüssel noch eines der Geheimnisse.
       const gesamt = b.log.join('\n');

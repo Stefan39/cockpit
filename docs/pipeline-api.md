@@ -25,7 +25,7 @@ skizziert, gibt es nicht: die Rolle `cockpit` darf keine Schemas anlegen (COPI-6
 | `pipeline_usage` | ein Lauf eines Werkzeugs: Tokens, rechnerische und reale Kosten. Nur anhängen |
 | `pipeline_provider_state` | je Anbieter `ok`, `exhausted` (bis `until`) oder `disabled` |
 
-Nichts wird gelöscht (README „Nie löschen, nur markieren").
+Nichts wird gelöscht (Handbuch „Nie löschen, nur markieren").
 
 ## Regeln der Queue
 

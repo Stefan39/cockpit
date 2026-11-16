@@ -15,7 +15,7 @@
  *   dunkel ink-3  #767c8a → #8a90a0   (3,9 : 1 auf surface)
  */
 
-/* `source(none)`: Tailwind sucht Klassen nur dort, wo `@source` es sagt — nicht in src/, test/ oder README. */
+/* `source(none)`: Tailwind sucht Klassen nur dort, wo `@source` es sagt — nicht in src/, test/ oder Handbuch. */
 @import "tailwindcss" source(none);
 @source "../../views";
 

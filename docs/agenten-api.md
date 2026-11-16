@@ -733,7 +733,7 @@ Anbieters (Anthropic USD, IONOS EUR), mit Quelle, Prüfdatum und Gültigkeit von
 des Eintrags; ein Datums-Anhang am Modellnamen (`claude-haiku-4-5-20251001`) zählt für die Suche nicht. Staffeln nach Prompt-Länge sind eigene Zeilen mit `prompt_ab`
 (Eingabe + Cache-Schreiben + Cache-Lesen je Eintrag); es gilt die höchste passende Staffel. Ein neuer Preis
 kommt als neue Zeile per Migration, die alte bekommt ihr Enddatum. Die Kosten sind jederzeit neu berechenbar
-(`verbrauch-kosten-neu`, siehe README „Server-Kommandos").
+(`verbrauch-kosten-neu`, siehe Handbuch „Server-Kommandos").
 
 **Ein Eintrag ohne Preis wird trotzdem gespeichert** — mit Kosten `NULL`, und die Antwort zählt ihn in `ohne_preis`.
 Das ist eine Warnung, kein Fehler: das Werkzeug wiederholt nicht, sondern meldet Stefan das Modell; nach dem

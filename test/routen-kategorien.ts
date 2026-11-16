@@ -8,7 +8,7 @@
  * grün. Der Routen-Test (`routen-tor-datenbank.test.ts`) prüft **jede registrierte Route**
  * mit echten Anfragen gegen diese Tabelle und schlägt an, wenn eine Route fehlt (eine neue
  * Route muss sich hier einordnen) oder überzählig ist; der README-Test
- * (`routen-readme.test.ts`) prüft, dass die Tabelle im README dieselbe ist.
+ * (`routen-readme.test.ts`) prüft, dass die Tabelle im Handbuch dieselbe ist.
  *
  * Drei Zustände, die das Tor unterscheidet: kein Konto angemeldet, angemeldet ohne aktiven
  * zweiten Faktor, angemeldet mit aktivem zweitem Faktor.
@@ -109,7 +109,7 @@ export type KategorieName = keyof typeof KATEGORIEN;
 /**
  * Jede registrierte Route, `METHODE Muster` (so, wie Fastify sie kennt; HEAD ist die
  * automatische Ergänzung jeder GET-Route und steht hier nicht). Reihenfolge = Reihenfolge
- * der Tabelle im README.
+ * der Tabelle im Handbuch.
  */
 export const ROUTEN: Readonly<Record<string, KategorieName>> = {
   'GET /gesund': 'immer',

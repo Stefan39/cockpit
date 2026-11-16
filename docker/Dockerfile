@@ -32,7 +32,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/views ./views
 COPY --from=build /app/assets ./assets
 # Die Migrationen (COPI-31): der Runner steckt in dist/datenbank, die SQL-Dateien liegen hier. Ohne sie
-# gäbe es auf einer neuen Instanz keinen Weg zum Schema (`migrieren`, siehe README).
+# gäbe es auf einer neuen Instanz keinen Weg zum Schema (`migrieren`, siehe Handbuch).
 COPY --from=build /app/db/migrations ./db/migrations
 COPY --from=build /app/config ./config
 COPY package.json ./
