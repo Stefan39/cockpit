@@ -1,0 +1,7 @@
+<%/* Das Innere einer Anhangzeile (COPI-110): Symbol, Name und Angaben, die Marke. Angabe: `anhang` (`anhangZeileAnsicht`). */%>
+<span class="anhang-symbol anhang-symbol-<%= it.anhang.klasse %>"><%~ include('./symbol', { name: it.anhang.symbol }) %></span>
+<span class="anhang-text">
+  <span class="anhang-name"><%= it.anhang.name %></span>
+  <span class="anhang-meta"><%= it.anhang.meta %><% if (it.anhang.grund) { %> · <span class="anhang-grund anhang-grund-<%= it.anhang.klasse %>"><%= it.anhang.grund %></span><% } %></span>
+</span>
+<% if (it.anhang.klasse === 'warnung') { %><span class="anhang-marke anhang-marke-warnung">Warnung</span><% } else if (it.anhang.klasse === 'gesperrt') { %><span class="anhang-marke anhang-marke-gesperrt">Gesperrt</span><% } %>

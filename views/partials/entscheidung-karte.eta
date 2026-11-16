@@ -1,0 +1,62 @@
+<%/*
+  Die Entscheidungskarte der Detailseite (COPI-91, freigegebener Entwurf „Akquise"). Angaben: `entscheidung` (aus
+  `entscheidungAnsicht`, `routes/modul-entscheidung.ts`), optional `uebernehmen` (Formular „Selbst übernehmen", sitzt dann
+  in der Karte wie bei der Freigabe).
+
+  Oben der Titel — mit Entwurf des Agenten dessen Titel und Fassung —, rechts die Marke: „Wartet auf dich", solange es
+  etwas zu entscheiden gibt, sonst das Wort der geltenden Entscheidung. Der Entwurf ist Text des Agenten über Fremdtext:
+  maskiert, nie verlinkt; „Text kopieren" ist ohne Skript verborgen (`assets/js/pwa.js`, 7.). Die geltende Entscheidung
+  steht als Band. Jede Option ist ein eigenes Formular mit signierter Bestätigung; „Zurücknehmen" nimmt die geltende
+  Entscheidung zurück.
+*/%>
+<% const e = it.entscheidung; %>
+<% const offen = e.optionen.length > 0; %>
+<section class="freigabe-karte<% if (offen) { %> freigabe-karte-offen<% } %>" aria-labelledby="entscheidung-titel">
+  <div class="freigabe-kopf">
+    <span class="freigabe-kopf-links"><%~ include('./symbol', { name: 'stift' }) %><span><span class="freigabe-titel" id="entscheidung-titel"><%= e.entwurf ? e.entwurf.titel : e.titel %></span><% if (e.entwurf && e.entwurf.fassung) { %><span class="freigabe-fassung">Fassung <%= e.entwurf.fassung %></span><% } %></span></span>
+    <% if (offen) { %><span class="freigabe-marke freigabe-marke-warten">Wartet auf dich</span><% } else if (e.geltend) { %><span class="freigabe-marke freigabe-marke-ok"><%= e.geltend.kurz %></span><% } %>
+  </div>
+  <% if (e.entwurf && e.entwurf.bloecke) { %>
+  <%/* Einfache Formatierung (COPI-125): nur Absätze, Überschriften und Listen, jeder Text maskiert. „Text kopieren" nimmt den Text aus dem verborgenen Original (`hidden`, Screenreader lesen ihn so nicht doppelt). */%>
+  <div class="freigabe-text freigabe-text-einfach">
+    <%~ include('./einfacher-text', { bloecke: e.entwurf.bloecke }) %>
+  </div>
+  <p id="entscheidung-entwurf" hidden><%= e.entwurf.text %></p>
+  <% } else if (e.entwurf) { %>
+  <p class="freigabe-text" id="entscheidung-entwurf"><%= e.entwurf.text %></p>
+  <% } %>
+  <% if (e.geltend) { %>
+  <p class="freigabe-band freigabe-band-ok" role="status"><%~ include('./symbol', { name: 'ok' }) %><span><strong><%= e.geltend.kurz %></strong> <span>von <%= e.geltend.von %>, <%= e.geltend.am %></span></span></p>
+  <% } %>
+  <div class="freigabe-fuss">
+    <% for (const option of e.optionen) { %>
+    <form method="post" action="<%= option.href %>">
+      <input type="hidden" name="wert" value="<%= option.wert %>">
+      <input type="hidden" name="erwartet" value="<%= option.erwartet %>">
+      <input type="hidden" name="bis" value="<%= option.bis %>">
+      <input type="hidden" name="token" value="<%= option.token %>">
+      <button type="submit" class="knopf <%= option.primaer ? 'knopf-primaer' : 'knopf-sekundaer' %>"><%= option.label %></button>
+    </form>
+    <% } %>
+    <% if (e.entwurf) { %>
+    <button type="button" class="knopf knopf-sekundaer knopf-mit-symbol" data-kopieren="entscheidung-entwurf" hidden><%~ include('./symbol', { name: 'kopieren' }) %><span data-kopieren-text>Text kopieren</span></button>
+    <% } %>
+    <% if (it.uebernehmen) { %>
+    <form method="post" action="<%= it.uebernehmen.href %>">
+      <input type="hidden" name="bis" value="<%= it.uebernehmen.bis %>">
+      <input type="hidden" name="token" value="<%= it.uebernehmen.token %>">
+      <button type="submit" class="knopf knopf-sekundaer knopf-mit-symbol"><%~ include('./symbol', { name: 'uebernehmen' }) %>Selbst übernehmen</button>
+    </form>
+    <% } %>
+    <% if (e.zuruecknehmen) { %>
+    <form method="post" action="<%= e.zuruecknehmen.href %>">
+      <input type="hidden" name="entscheidung" value="<%= e.zuruecknehmen.entscheidung %>">
+      <input type="hidden" name="bis" value="<%= e.zuruecknehmen.bis %>">
+      <input type="hidden" name="token" value="<%= e.zuruecknehmen.token %>">
+      <button type="submit" class="knopf knopf-sekundaer knopf-gefahr">Zurücknehmen</button>
+    </form>
+    <% } %>
+    <% const hinweis = e.entwurf && e.entwurf.hinweis ? e.entwurf.hinweis : e.hinweis; %>
+    <% if (hinweis) { %><p class="freigabe-hinweis"><%= hinweis %></p><% } %>
+  </div>
+</section>

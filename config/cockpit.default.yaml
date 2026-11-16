@@ -1,0 +1,19 @@
+# Standard-Konfiguration des Cockpit — wird beim Start geladen und per ENV
+# überschrieben (siehe README). Enthält keine Zugangsdaten.
+#
+# kundensichtbar-Default gilt für neue Module, nicht nur hier (Architektur-
+# Leitplanke aus docs/architektur-leitplanken.md): Rohbefunde des Admin-Agenten sind nie
+# standardmäßig für den Kunden sichtbar.
+
+server:
+  port: 3000
+  host: "0.0.0.0"
+
+session:
+  cookiePrefix: "__Host-"
+
+module:
+  kundensichtbarDefault: false
+
+budget:
+  taeglichesLimitProBenutzer: null # wird je Kundeninstanz gesetzt, sobald E4 steht

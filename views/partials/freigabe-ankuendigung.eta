@@ -1,0 +1,13 @@
+<%/*
+  Wie ein Update-Antrag freigegeben wird (COPI-141), auf beiden Bestätigungsseiten. Angaben: `modus` (`rueckfrage` oder
+  `direkt`, der Modus, der für diesen Antrag gälte), `notweg` (der Bereich steht auf `direkt`, aber das Ziel ist getippt:
+  dann bleibt es bei der Rückfrage) und `rueckfrage` (der Satz der Seite für den Ablauf mit Rückfrage).
+*/%>
+<% if (it.modus === 'direkt') { %>
+<%~ include('./hinweis', { art: 'info', text: 'Freigabe: direkt. Mit „Freigeben und installieren“ ist das Update freigegeben, ohne Rückfrage in Slack. Ausführen tut es der Admin-Agent; Slack meldet nur das Ergebnis. Bis er beginnt, lässt es sich in den Einstellungen zurückziehen.' }) %>
+<% } else { %>
+<%~ include('./hinweis', { art: 'info', text: it.rueckfrage }) %>
+<% if (it.notweg) { %>
+<%~ include('./hinweis', { art: 'info', text: 'Ein von Hand gewählter Stand wird immer in Slack bestätigt, auch wenn Updates sonst direkt installiert werden.' }) %>
+<% } %>
+<% } %>

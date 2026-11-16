@@ -1,0 +1,16 @@
+# Secret-Scan (COPI-248): Standardregeln von gitleaks plus die begründeten Ausnahmen unten.
+# Aufruf: `npm run secretscan` (Skript `scripts/secret-scan.sh`), in der CI als Schritt der Gates.
+title = "cockpit"
+
+[extend]
+useDefault = true
+
+# Nur die drei Dateien, in denen erfundene Werte stehen. Neue Ausnahmen brauchen eine Begründung hier, am besten je
+# Datei und nie als Verzeichnis oder Muster über alle Tests.
+[[allowlists]]
+description = "Test-Fixtures mit erfundenen Werten: Beispiel-Token für die Protokoll-Filterung und Push-Abonnement-Schlüssel ohne Verbindung zu einem Dienst."
+paths = [
+  '''(^|/)test/protokoll\.test\.ts$''',
+  '''(^|/)test/push-datenbank\.test\.ts$''',
+  '''(^|/)test/posteingang-push-datenbank\.test\.ts$''',
+]

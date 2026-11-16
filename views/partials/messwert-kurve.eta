@@ -1,0 +1,9 @@
+<%/*
+  Die Messwert-Kurve (COPI-83): Fläche und Linie über das Zeitfenster, einzelne Werte zwischen zwei Lücken als Punkt,
+  bei `warnlinie` die gestrichelte Warnschwelle. Inline-SVG wie die Bänder (`partials/band.eta`): Form nur in
+  Attributen (`d`, `y1` …), Farbe, Strichstärke und Strichelung per CSS-Klasse, nie ein `style`-Attribut; die Höhe
+  setzt `klasse`, die Breite dehnt sich (`preserveAspectRatio="none"`, die Linie bleibt dank `vector-effect` gleich
+  dick). `kurve.text` ist die Textalternative (WCAG 1.1.1) — Einheit und Titel kommen aus einer Fach-View und werden
+  escaped. Angaben: `kurve` (aus `messwertAnsicht`), `farbe`, `klasse`, optional `warnlinie` (nur die Kachel).
+*/%>
+<svg class="kurve kurve-<%= it.farbe %> <%= it.klasse %>" viewBox="0 0 <%= it.kurve.breite %> <%= it.kurve.hoehe %>" preserveAspectRatio="none" role="img" aria-label="<%= it.kurve.text %>" focusable="false"><title><%= it.kurve.text %></title><% if (it.kurve.flaeche !== '') { %><path d="<%= it.kurve.flaeche %>" class="kurve-flaeche" /><% } %><% if (it.warnlinie && it.kurve.warnlinie !== undefined) { %><line x1="0" x2="<%= it.kurve.breite %>" y1="<%= it.kurve.warnlinie %>" y2="<%= it.kurve.warnlinie %>" class="kurve-warnlinie" /><% } %><% if (it.kurve.linie !== '') { %><path d="<%= it.kurve.linie %>" class="kurve-linie" /><% } %><% if (it.kurve.punkte !== '') { %><path d="<%= it.kurve.punkte %>" class="kurve-punkt" /><% } %></svg>

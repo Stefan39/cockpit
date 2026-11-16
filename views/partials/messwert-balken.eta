@@ -1,0 +1,6 @@
+<%/*
+  Der Füllbalken eines Messwerts mit Obergrenze (COPI-83): Grund in `line`, Füllung in der Zustandsfarbe. Ohne
+  `viewBox`, damit die runden Enden rund bleiben: die Breite der Füllung ist ein Prozent-Attribut, nie ein
+  `style`-Attribut. Rein dekorativ — Zahl und Bezug stehen daneben als Text. Angaben: `prozent` (0–100), `farbe`.
+*/%>
+<svg class="messwert-balken" aria-hidden="true" focusable="false"><rect x="0" y="0" width="100%" height="100%" rx="4" class="band-leer" /><rect x="0" y="0" width="<%= it.prozent %>%" height="100%" rx="4" class="band-<%= it.farbe %>" /></svg>

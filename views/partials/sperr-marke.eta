@@ -1,0 +1,6 @@
+<%/*
+  Die Marke einer übernommenen Zeile (COPI-85, Entwurf „Übernahme"): Pille in der Akzentfarbe mit Personen-Symbol,
+  „übernommen · Stefan" — auf der Kachel mit Zeit („· seit 14:02"). Angaben: `sperre` (aus `sperrMarke`), optional
+  `mitZeit`. Der Name kommt aus dem Konto und wird escaped; ein gelöschtes Konto heißt „ehemaliges Konto".
+*/%>
+<span class="sperr-marke"><%~ include('./symbol', { name: 'uebernehmen' }) %>übernommen · <%= it.sperre.vorname %><% if (it.mitZeit) { %> · seit <%= it.sperre.seitKurz %><% } %></span>

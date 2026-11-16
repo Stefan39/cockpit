@@ -1,0 +1,8 @@
+<% layout('layout') %>
+<%/*
+  Nach der Bestätigung einer neuen E-Mail-Adresse (COPI-47). Angabe: `email` (die jetzt gültige Adresse).
+*/%>
+<h1>Adresse bestätigt</h1>
+<%~ include('partials/hinweis', { art: 'ok', text: `Ab jetzt gilt ${it.email} für Ihren Zugang zum Cockpit.` }) %>
+<p>Melden Sie sich künftig mit dieser Adresse an. Passwort und zweiter Faktor sind unverändert.</p>
+<p><a href="/anmelden" class="knopf knopf-sekundaer">Zur Anmeldung</a></p>

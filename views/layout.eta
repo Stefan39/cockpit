@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title><%= it.titel %> · Cockpit</title>
+    <link rel="stylesheet" href="<%= it.stylesheet %>" />
+    <%/* Installierbare App (COPI-58): Manifest und Symbole liegen vor dem Tor, der Browser holt sie ohne Cookie. */%>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="<%= it.themaFarbe %>" />
+    <%/* Das Symbol der Instanz (COPI-101): Adressen mit Inhalts-Hash, ein neues Symbol ist eine neue Adresse. */%>
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.<%= it.symbolHash %>.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.<%= it.symbolHash %>.png" />
+    <meta name="apple-mobile-web-app-title" content="Cockpit" />
+    <% if (it.nav) { %>
+    <script type="module" src="/pwa.js"></script>
+    <% } %>
+  </head>
+  <body>
+    <a href="#inhalt" class="ueberspringen">Zum Inhalt springen</a>
+    <% if (it.nav) { %>
+    <%/* Angemeldete Seiten (COPI-43): der App-Rahmen des Prototyps, Sidebar bzw. Tab-Leiste und der Inhalt daneben. */%>
+    <div class="app">
+      <%~ include('partials/rahmen', { nav: it.nav, instanz: it.instanz, cockpitVersion: it.cockpitVersion }) %>
+      <main id="inhalt" class="app-inhalt">
+        <% if (it.nav.posteingang) { %>
+        <%~ include('partials/posteingang', { posteingang: it.nav.posteingang }) %>
+        <% } %>
+        <%~ it.body %>
+      </main>
+    </div>
+    <% } else { %>
+    <%/* Seiten ohne Konto (Anmelden, Erststart, Einlösen): die Wortmarke und eine Karte. */%>
+    <%~ include('partials/kopf') %>
+    <div class="px-4 pb-10">
+      <main id="inhalt" class="karte">
+        <%~ it.body %>
+      </main>
+    </div>
+    <% } %>
+  </body>
+</html>

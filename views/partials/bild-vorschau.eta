@@ -1,0 +1,15 @@
+<%/*
+  Die Bildvorschau einer Modulzeile (COPI-124, freigegebener Entwurf „Social"): je Bild-Anhang (PNG, JPEG, WebP, von
+  `anhang-pruefung.ts` erkannt) das Bild aus der eigenen Route des Cockpits, nie von außen. Der Name ist Fremdtext:
+  maskiert, nur als Alternativtext und Bildunterschrift. Das Original lädt man weiter über die Anhänge mit Warnseite.
+  Angabe: `bilder` (`{ name, src }`).
+*/%>
+<section class="bild-vorschau" aria-labelledby="bild-vorschau-titel">
+  <h2 class="langtext-titel" id="bild-vorschau-titel"><%= it.bilder.length === 1 ? 'Bild' : `Bilder · ${it.bilder.length}` %></h2>
+  <% for (const bild of it.bilder) { %>
+  <figure class="bild-vorschau-figur">
+    <img class="bild-vorschau-bild" src="<%= bild.src %>" alt="Vorschau: <%= bild.name %>" decoding="async" />
+    <figcaption class="bild-vorschau-name"><%= bild.name %></figcaption>
+  </figure>
+  <% } %>
+</section>

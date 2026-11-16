@@ -1,0 +1,17 @@
+<%/*
+  Die Versionszeile (COPI-84): „Cockpit v0.6.0", klein und gedämpft, in der Sidebar (über dem Dark-Mode-Schalter) und
+  auf „Mehr" (mobil). Angaben: `version` (nur SemVer, ohne `+commit`; ohne Angabe entfällt der Text — lokal/Tests),
+  `hinweis` (`nav.updateHinweis`, nur für Konten mit `technik_sehen`; sonst `undefined`), `tippId` (eindeutig je Seite,
+  da die Zeile auf „Mehr" zweimal im Markup steht) und optional `klasse`.
+  Der Hinweis „Update verfügbar" ist ein echter Link zu den Einstellungen (dort sitzt der Antrag), per Tastatur erreichbar.
+  Sein Name steht als Text da (nie nur `title`); der sichtbare Tooltip erscheint bei Hover und Fokus und ist per
+  `aria-describedby` angebunden. Der Text der Wache kommt aus dem Befund: alles wird escaped.
+*/%>
+<% if (it.version || it.hinweis) { %>
+<p class="versionszeile<% if (it.klasse) { %> <%= it.klasse %><% } %>">
+  <% if (it.version) { %><span>Cockpit v<%= it.version %></span><% } %>
+  <% if (it.hinweis) { %>
+  <a href="/einstellungen" class="update-hinweis" aria-describedby="<%= it.tippId %>"><%~ include('./symbol', { name: 'update' }) %><span class="sr-only">Update verfügbar</span><span class="update-tipp" id="<%= it.tippId %>" role="tooltip">Update verfügbar: <%= it.hinweis.text %></span></a>
+  <% } %>
+</p>
+<% } %>

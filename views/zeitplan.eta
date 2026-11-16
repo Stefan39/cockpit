@@ -1,0 +1,25 @@
+<% layout('layout', { nav: it.nav }) %>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/mehr', ziel: 'Mehr' } }) %>
+<% if (it.zeitplan.stand) { %>
+<p class="stand-inventar">Stand des Inventars: <%= it.zeitplan.stand %></p>
+<% } %>
+<% if (it.zeitplan.gruppen.length === 0) { %>
+<% if (it.zeitplan.stand) { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Keine Zeitpläne gemeldet', detail: 'Die gemeldeten Agenten haben keinen festen Zeitplan.' } }) %>
+<% } else { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch kein Inventar gemeldet', detail: 'Sobald der Betrieb seine Agenten meldet, erscheint hier ihr Zeitplan.' } }) %>
+<% } %>
+<% } else { %>
+<ul class="agenten">
+  <% for (const gruppe of it.zeitplan.gruppen) { %>
+  <li class="agent">
+    <h2 class="agent-name"><%= gruppe.agent %></h2>
+    <dl class="werte">
+      <% for (const takt of gruppe.takte) { %>
+      <div><dt><%= takt.name %></dt><dd><%= takt.wann %></dd></div>
+      <% } %>
+    </dl>
+  </li>
+  <% } %>
+</ul>
+<% } %>

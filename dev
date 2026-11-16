@@ -1,0 +1,371 @@
+#!/usr/bin/env bash
+# Lokaler Dev-Stack für Cockpit: hoch- und herunterfahren, ohne Variablen zu setzen.
+#
+#   ./dev up          Postgres + Mailpit, Migration, Assets, Dev-Server (Strg+C beendet alles)
+#   ./dev down        Alles beenden, auch nach einem Terminal-Absturz; meldet, ob die Ports frei sind
+#   ./dev status      Container, Ports und Prozesse anzeigen
+#   ./dev test [...]  Tests mit geladener .env; startet Postgres bei Bedarf und stoppt es danach wieder
+#   ./dev coverage    Wie test, aber mit Coverage (Gate 3)
+#   ./dev reset       Dev-Datenbank löschen (mit Rückfrage)
+#   ./dev demo        Dev-Datenbank mit Demodaten füllen (COPI-80); startet Postgres bei Bedarf, läuft weiter
+#   ./dev vorschau    Cockpit gegen die Demodaten mit eingesetzter Rolle starten, ohne Anmeldung (COPI-80)
+#
+# Die .env wird hier per Shell geladen (wie `set -a && . ./.env && set +a`) und nicht per
+# `node --env-file`: NODE_EXTRA_CA_CERTS muss beim Prozessstart gesetzt sein.
+#
+# Bewusst kein `set -e`: jeder Schritt prüft sein Ergebnis selbst, damit das Aufräumen
+# (Prozesse beenden, Container herunterfahren) auch nach einem Fehler sicher läuft.
+set -u
+
+WURZEL="$(cd "$(dirname "$0")" && pwd)"
+cd "$WURZEL" || exit 1
+
+COMPOSE=(docker compose -f docker/compose.dev.yaml)
+ZUSTAND="$WURZEL/.dev"
+PID_DATEI="$ZUSTAND/pids"
+TSX="$WURZEL/node_modules/.bin/tsx"
+DOCKER_PORTS="5432 1025 8025"
+
+meldung() { printf '%s\n' "$*"; }
+warnung() { printf 'Warnung: %s\n' "$*" >&2; }
+abbruch() { printf 'Fehler: %s\n' "$*" >&2; exit 1; }
+
+hilfe() {
+  cat <<'EOF'
+Nutzung: ./dev <befehl>
+
+  up          Postgres + Mailpit, Migration, Assets und Dev-Server starten.
+              Strg+C beendet alles, auch die Container (Daten bleiben).
+  down        Alles beenden, auch nach einem Terminal-Absturz. Meldet, ob die Ports frei sind.
+  status      Container, Ports und Prozesse anzeigen.
+  test [...]  Tests mit geladener .env (Argumente gehen an vitest).
+              Postgres wird bei Bedarf gestartet und danach wieder gestoppt.
+  coverage    Wie test, aber mit Coverage (Gate 3).
+  reset       Dev-Datenbank löschen (mit Rückfrage).
+  demo        Dev-Datenbank mit realistischen Demodaten füllen (Wachen, Befund-Verlauf über
+              7 Tage, Beispiel-Modul „Server & Dienste"). Startet Postgres bei Bedarf, lässt es
+              danach laufen. Wiederholbar: räumt vorher nur eigene Demodaten ab (Präfix demo-).
+  vorschau --rolle betreuer|betriebs_admin|betrieb_mitarbeiter [--port N]
+              Cockpit gegen die Dev-Datenbank starten, mit eingesetzter Sitzung für die
+              gewählte Rolle — angemeldet, zweiter Faktor aktiv, ohne Anmeldeformular und ohne
+              Passkey. Standard-Port 3100 (nie 3000, dort läuft ggf. `npm run dev`).
+EOF
+}
+
+# --- Umgebung ---------------------------------------------------------------
+
+# Lädt die .env in die Umgebung. Mit "anlegen" (up, test) wird sie bei Bedarf aus .env.example erzeugt,
+# und eine fehlerhafte .env bricht ab. Ohne (down, status, reset) wird sie dann nur nicht geladen, damit
+# Aufräumen immer geht. Die Prüfung nennt Zeile und Namen, nie den Wert (COPI-63).
+lade_env() {
+  if [ ! -f .env ]; then
+    [ "${1:-}" = "anlegen" ] || return 0
+    cp .env.example .env || abbruch ".env konnte nicht angelegt werden."
+    meldung ".env fehlte und wurde aus .env.example angelegt."
+  fi
+  if ! bash docker/env-pruefen.sh .env; then
+    [ "${1:-}" = "anlegen" ] || { warnung ".env ist fehlerhaft und wird nicht geladen."; return 0; }
+    abbruch ".env ist fehlerhaft, nichts wurde gestartet. Werte mit Sonderzeichen gehören in einfache Anführungszeichen."
+  fi
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+}
+
+app_port() { printf '%s' "${PORT:-3000}"; }
+
+pruefe_docker() {
+  docker info >/dev/null 2>&1 || abbruch "Docker läuft nicht. Bitte Docker Desktop starten und erneut versuchen."
+}
+
+pruefe_node() {
+  local soll ist
+  command -v node >/dev/null 2>&1 || abbruch "Node.js nicht gefunden (erwartet: Node $(cat .nvmrc))."
+  soll="$(tr -d 'v \n' < .nvmrc | cut -d. -f1)"
+  ist="$(node -p 'process.versions.node.split(".")[0]')"
+  if [ "$ist" != "$soll" ]; then
+    warnung "Node $ist ist aktiv, das Projekt erwartet Node $soll (.nvmrc). Es läuft meist trotzdem, weicht aber von CI und Image ab."
+  fi
+}
+
+pruefe_abhaengigkeiten() {
+  if [ ! -x "$TSX" ]; then
+    meldung "node_modules fehlt – npm ci läuft ..."
+    npm ci || abbruch "npm ci ist fehlgeschlagen."
+  fi
+}
+
+# --- Ports und Prozesse -----------------------------------------------------
+
+port_halter() { lsof -nP -iTCP:"$1" -sTCP:LISTEN -t 2>/dev/null | head -n 1; }
+
+# Prozess, dessen Arbeitsverzeichnis dieses Repo ist (lsof -Fn liefert Zeilen wie "n/pfad").
+gehoert_zu_uns() { lsof -a -p "$1" -d cwd -Fn 2>/dev/null | grep -qx "n$WURZEL"; }
+
+# Beschreibt, wer einen Port belegt; Rückgabe 1, wenn er frei ist.
+belegt_durch() {
+  local name pid
+  name="$(docker ps --filter "publish=$1" --format '{{.Names}}' 2>/dev/null | head -n 1)"
+  if [ -n "$name" ]; then
+    printf 'Container %s' "$name"
+    return 0
+  fi
+  pid="$(port_halter "$1")"
+  if [ -n "$pid" ]; then
+    printf 'Prozess %s (%s)' "$pid" "$(ps -p "$pid" -o comm= 2>/dev/null)"
+    return 0
+  fi
+  return 1
+}
+
+pruefe_ports() {
+  local ports port wer blockiert=0
+  ports="$(app_port)"
+  # Läuft der eigene Compose-Stack schon, gehören dessen Ports uns.
+  if [ -z "$("${COMPOSE[@]}" ps -q 2>/dev/null)" ]; then
+    ports="$ports $DOCKER_PORTS"
+  fi
+  for port in $ports; do
+    if wer="$(belegt_durch "$port")"; then
+      blockiert=1
+      printf 'Port %s ist belegt durch %s.\n' "$port" "$wer" >&2
+    fi
+  done
+  if [ "$blockiert" = 1 ]; then
+    abbruch "Erst den Verursacher beenden (anderes Projekt: dort herunterfahren; hängender Cockpit-Lauf: ./dev down), dann erneut ./dev up."
+  fi
+}
+
+# Nur Gruppen beenden, in denen ein Prozess auf dieses Repo zeigt — nie fremde Prozesse.
+gruppe_gehoert_zu_uns() {
+  local pid
+  for pid in $(pgrep -g "$1" 2>/dev/null); do
+    case "$(ps -p "$pid" -o command= 2>/dev/null)" in
+      *"$WURZEL"*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+beende_gruppe() {
+  local i
+  kill -TERM -- "-$1" 2>/dev/null || return 0
+  for i in $(seq 1 20); do
+    kill -0 -- "-$1" 2>/dev/null || return 0
+    sleep 0.25
+  done
+  kill -KILL -- "-$1" 2>/dev/null
+  return 0
+}
+
+# Beendet Dev-Server und Asset-Watcher (laut PID-Datei) samt Kindprozessen.
+stoppe_dienste() {
+  local name pgid pid
+  if [ -f "$PID_DATEI" ]; then
+    while read -r name pgid; do
+      if [ -n "${pgid:-}" ] && gruppe_gehoert_zu_uns "$pgid"; then
+        beende_gruppe "$pgid"
+      fi
+    done < "$PID_DATEI"
+    rm -f "$PID_DATEI"
+  fi
+  # Auffangnetz: ein eigener Server, der ohne PID-Datei noch den Port hält (z. B. nach kill -9).
+  pid="$(port_halter "$(app_port)")"
+  if [ -n "$pid" ] && gehoert_zu_uns "$pid"; then
+    kill -TERM "$pid" 2>/dev/null
+    sleep 1
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -KILL "$pid" 2>/dev/null
+    fi
+  fi
+  return 0
+}
+
+zeige_ports() {
+  local port wer belegt=0
+  for port in "$(app_port)" $DOCKER_PORTS; do
+    if wer="$(belegt_durch "$port")"; then
+      belegt=1
+      printf 'Port %s: belegt durch %s\n' "$port" "$wer"
+    fi
+  done
+  if [ "$belegt" = 0 ]; then
+    meldung "Ports $(app_port), $(printf '%s' "$DOCKER_PORTS" | tr ' ' ',' | sed 's/,/, /g') sind frei."
+  fi
+}
+
+# --- Befehle ----------------------------------------------------------------
+
+FERTIG=0
+aufraeumen() {
+  [ "$FERTIG" = 1 ] && return 0
+  FERTIG=1
+  trap '' INT TERM HUP # ein zweites Strg+C darf das Aufräumen nicht abbrechen
+  printf '\nFahre herunter ...\n'
+  stoppe_dienste
+  "${COMPOSE[@]}" down --remove-orphans
+  meldung "Stack ist unten. Die Daten bleiben erhalten (./dev reset löscht sie)."
+}
+
+befehl_up() {
+  lade_env anlegen
+  pruefe_node
+  pruefe_docker
+  pruefe_abhaengigkeiten
+  pruefe_ports
+  sh docker/dev-certs.sh || abbruch "Dev-Zertifikat konnte nicht erzeugt werden."
+
+  # Ab hier gibt es etwas aufzuräumen: bei Strg+C, Terminal-Ende oder Fehler alles wieder herunterfahren.
+  trap 'aufraeumen; exit 130' INT
+  trap 'aufraeumen; exit 143' TERM
+  trap 'aufraeumen; exit 129' HUP
+  trap 'aufraeumen' EXIT
+
+  meldung "Starte Postgres und Mailpit ..."
+  "${COMPOSE[@]}" up -d --wait --wait-timeout 90 \
+    || abbruch "Docker-Dienste sind nicht gesund gestartet (Logs: docker compose -f docker/compose.dev.yaml logs)."
+  npm run --silent migrate || abbruch "Migration fehlgeschlagen."
+  npm run --silent assets || abbruch "Asset-Build fehlgeschlagen."
+
+  mkdir -p "$ZUSTAND"
+  : > "$PID_DATEI"
+  # Jobkontrolle: jeder Dienst bekommt eine eigene Prozessgruppe, die sich samt Kindern beenden lässt.
+  # stdin von /dev/null, sonst stoppt ein Hintergrundprozess beim Lesen vom Terminal (SIGTTIN).
+  set -m
+  local server_pid assets_pid
+  "$TSX" watch src/server/index.ts < /dev/null &
+  server_pid=$!
+  printf 'server %s\n' "$server_pid" >> "$PID_DATEI"
+  "$TSX" src/assets/cli.ts --watch < /dev/null &
+  assets_pid=$!
+  printf 'assets %s\n' "$assets_pid" >> "$PID_DATEI"
+  set +m
+
+  meldung ""
+  meldung "Cockpit:  http://localhost:$(app_port)"
+  meldung "Mailpit:  http://localhost:8025"
+  meldung "Strg+C beendet alles (./dev down räumt auf, falls das Terminal vorher weg war)."
+  meldung ""
+
+  wait "$server_pid"
+}
+
+befehl_down() {
+  lade_env
+  stoppe_dienste
+  if docker info >/dev/null 2>&1; then
+    "${COMPOSE[@]}" down --remove-orphans
+  else
+    meldung "Docker läuft nicht – dort ist nichts zu stoppen."
+  fi
+  zeige_ports
+}
+
+befehl_status() {
+  lade_env
+  meldung "Container:"
+  if docker info >/dev/null 2>&1; then
+    "${COMPOSE[@]}" ps -a
+  else
+    meldung "  Docker läuft nicht."
+  fi
+  meldung ""
+  meldung "Ports:"
+  zeige_ports
+  meldung ""
+  meldung "Dienste:"
+  local name pgid gefunden=0
+  if [ -f "$PID_DATEI" ]; then
+    while read -r name pgid; do
+      if [ -n "${pgid:-}" ] && gruppe_gehoert_zu_uns "$pgid"; then
+        meldung "  $name läuft (Gruppe $pgid)"
+        gefunden=1
+      fi
+    done < "$PID_DATEI"
+  fi
+  [ "$gefunden" = 1 ] || meldung "  Kein Dev-Server und kein Asset-Watcher aus diesem Repo."
+}
+
+# Startet Postgres, falls es nicht läuft (Rückgabe 0), sonst passiert nichts (Rückgabe 1) — der
+# Aufrufer entscheidet, ob und wie er es später wieder stoppt.
+postgres_sicherstellen() {
+  if [ -n "$("${COMPOSE[@]}" ps -q --status running postgres 2>/dev/null)" ]; then
+    return 1
+  fi
+  meldung "Postgres läuft nicht – starte es ..."
+  "${COMPOSE[@]}" up -d --wait postgres || abbruch "Postgres startet nicht."
+  return 0
+}
+
+# $1 ist das npm-Script (test oder coverage), der Rest geht an Vitest.
+befehl_tests() {
+  local script="$1"
+  shift
+  lade_env anlegen
+  pruefe_docker
+  [ -n "${TEST_DATABASE_URL:-}" ] \
+    || warnung "TEST_DATABASE_URL ist nicht gesetzt – die Datenbank-Tests werden übersprungen."
+  if postgres_sicherstellen; then
+    # Nur was dieser Aufruf gestartet hat, wird auch wieder gestoppt.
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    trap 'exit 129' HUP
+    trap '"${COMPOSE[@]}" down --remove-orphans >/dev/null 2>&1' EXIT
+  fi
+  npm run "$script" -- "$@"
+  exit $?
+}
+
+# Füllt die Dev-Datenbank mit Demodaten (COPI-80). Startet Postgres bei Bedarf wie `befehl_tests`,
+# lässt es aber laufen: die Demodaten sollen sich gleich danach mit `./dev vorschau` ansehen lassen.
+befehl_demo() {
+  lade_env anlegen
+  pruefe_node
+  pruefe_docker
+  pruefe_abhaengigkeiten
+  postgres_sicherstellen || true
+  "$TSX" scripts/dev/demo-daten.ts
+  exit $?
+}
+
+# Startet das Cockpit gegen die Dev-Datenbank mit eingesetzter Rolle, ohne Anmeldung (COPI-80).
+# Baut die Assets frisch (wie `befehl_up` es mit `npm run assets` tut); Argumente gehen unverändert
+# an `scripts/dev/vorschau.ts` (`--rolle`, `--port`).
+befehl_vorschau() {
+  lade_env anlegen
+  pruefe_node
+  pruefe_docker
+  pruefe_abhaengigkeiten
+  postgres_sicherstellen || true
+  "$TSX" scripts/dev/vorschau.ts "$@"
+  exit $?
+}
+
+befehl_reset() {
+  lade_env
+  pruefe_docker
+  printf 'Das löscht die Dev-Datenbank (Docker-Volume) unwiderruflich. Fortfahren? [j/N] '
+  local antwort=""
+  read -r antwort || antwort=""
+  case "$antwort" in
+    j | J | ja | Ja | y | Y) ;;
+    *) meldung "Abgebrochen."; exit 1 ;;
+  esac
+  stoppe_dienste
+  "${COMPOSE[@]}" down -v --remove-orphans
+  meldung "Dev-Datenbank gelöscht. Der nächste ./dev up legt sie neu an."
+}
+
+case "${1:-hilfe}" in
+  up) befehl_up ;;
+  down) befehl_down ;;
+  status) befehl_status ;;
+  test) shift; befehl_tests test "$@" ;;
+  coverage) shift; befehl_tests coverage "$@" ;;
+  reset) befehl_reset ;;
+  demo) befehl_demo ;;
+  vorschau) shift; befehl_vorschau "$@" ;;
+  hilfe | help | -h | --help) hilfe ;;
+  *) hilfe >&2; exit 2 ;;
+esac

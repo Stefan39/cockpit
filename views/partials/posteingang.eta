@@ -1,0 +1,60 @@
+<%/*
+  Der Posteingang im Kopf jeder angemeldeten Seite (COPI-112, freigegebener Entwurf): rechts oben ein Knopf mit dem
+  Posteingangs-Symbol und der Zahl alles Ungelesenen; er klappt die Liste der jüngsten Einträge auf (am Desktop als
+  Panel unter dem Knopf, mobil als Blatt von unten). Ohne Skript ein `<details>`: Auf- und Zuklappen geht trotzdem, nur
+  die Filter (Alle, Chat, Mails, Meldungen) blendet erst `pwa.js` ein.
+
+  Offene Freigaben (COPI-90) stehen als Aufgabe oben, warm getönt und ohne Ungelesen-Punkt.
+
+  Angabe: `posteingang` (aus `posteingangAnsicht`, `src/posteingang/posteingang.ts`). Titel und Anriss sind Fremdtexte
+  (Chat, Fach-View, Befund): escaped, nie verlinkt (JAC-577) — nur der ganze Eintrag ist ein Link aufs Ziel.
+*/%>
+<% const p = it.posteingang %>
+<% const zahl = (n) => (n > 99 ? '99+' : String(n)) %>
+<details class="posteingang" data-posteingang>
+  <summary class="posteingang-knopf" data-posteingang-gesamt="<%= p.gesamt %>" aria-label="Posteingang<%= p.gesamt > 0 ? `, ${p.gesamt} ungelesen` : ', nichts ungelesen' %>">
+    <%~ include('./symbol', { name: 'posteingang' }) %>
+    <% if (p.gesamt > 0) { %><span class="posteingang-zahl" aria-hidden="true"><%= zahl(p.gesamt) %></span><% } %>
+  </summary>
+  <div class="posteingang-hintergrund" aria-hidden="true" data-posteingang-schliessen></div>
+  <section class="posteingang-panel" aria-labelledby="posteingang-titel">
+    <span class="posteingang-griff" aria-hidden="true"></span>
+    <div class="posteingang-kopf">
+      <h2 id="posteingang-titel">Posteingang <span><%= p.gesamt > 0 ? `· ${p.gesamt} ungelesen` : '· alles gelesen' %></span></h2>
+      <button type="button" class="posteingang-zu" aria-label="Schließen" data-posteingang-schliessen><%~ include('./symbol', { name: 'schliessen' }) %></button>
+    </div>
+    <% if (p.gesamt > 0) { %>
+    <div class="posteingang-filter" role="group" aria-label="Filter" data-posteingang-filter hidden>
+      <button type="button" class="posteingang-chip" aria-pressed="true" data-filter="">Alle · <%= zahl(p.gesamt) %></button>
+      <% if (p.zahlen.freigabe > 0) { %><button type="button" class="posteingang-chip" aria-pressed="false" data-filter="freigabe">Freigaben · <%= zahl(p.zahlen.freigabe) %></button><% } %>
+      <% if (p.zahlen.chat > 0) { %><button type="button" class="posteingang-chip" aria-pressed="false" data-filter="chat">Chat · <%= zahl(p.zahlen.chat) %></button><% } %>
+      <% if (p.zahlen.postfach > 0) { %><button type="button" class="posteingang-chip" aria-pressed="false" data-filter="postfach">Mails · <%= zahl(p.zahlen.postfach) %></button><% } %>
+      <% if (p.zahlen.meldung > 0) { %><button type="button" class="posteingang-chip" aria-pressed="false" data-filter="meldung">Meldungen · <%= zahl(p.zahlen.meldung) %></button><% } %>
+    </div>
+    <ul class="posteingang-liste" data-posteingang-liste>
+      <% for (const eintrag of p.eintraege) { %>
+      <li data-quelle="<%= eintrag.quelle %>">
+        <a href="<%= eintrag.href %>" class="posteingang-eintrag<% if (eintrag.quelle === 'freigabe') { %> posteingang-eintrag-aufgabe<% } %>">
+          <span class="posteingang-art posteingang-art-<%= eintrag.quelle %><% if (eintrag.rot) { %> posteingang-art-rot<% } %>"><%~ include('./symbol', { name: { freigabe: 'senden', chat: 'chat', postfach: 'mail', meldung: 'glocke' }[eintrag.quelle] }) %></span>
+          <span class="posteingang-text">
+            <span class="posteingang-meta"><span><%= eintrag.herkunft %></span><span><%= eintrag.zeit %></span></span>
+            <span class="posteingang-titel"><% if (eintrag.quelle !== 'freigabe') { %><span class="posteingang-punkt" aria-hidden="true"></span><% } %><span><%= eintrag.titel %></span></span>
+            <% if (eintrag.anriss) { %><span class="posteingang-anriss"><%= eintrag.anriss %></span><% } %>
+          </span>
+        </a>
+      </li>
+      <% } %>
+    </ul>
+    <% } else { %>
+    <p class="posteingang-leer">Alles gelesen. Neue Chats, Mails und Meldungen erscheinen hier.</p>
+    <% } %>
+    <div class="posteingang-fuss">
+      <% if (p.gesamt > 0) { %>
+      <form method="post" action="/posteingang/gelesen">
+        <button type="submit" class="posteingang-alle"><%~ include('./symbol', { name: 'haken' }) %><span>Alle als gelesen</span></button>
+      </form>
+      <% } %>
+      <span class="posteingang-links"><% if (p.gesamt > p.eintraege.length) { %><%= p.eintraege.length %> von <%= p.gesamt %> · <% } %><a href="/chat">Nachrichten</a> · <a href="/meldungen">Meldungen</a></span>
+    </div>
+  </section>
+</details>

@@ -1,0 +1,30 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  „Mehr" (COPI-43): die Seiten, die nicht in die Navigation passen, und das Abmelden. Angabe: `nav` (die Einträge in
+  `nav.mehr`, gefiltert nach Recht). Darunter mobil die Versionszeile (COPI-84; am Desktop steht sie in der Sidebar). Aufgebaut wie die Listen des Prototyps (Meldungen): Symbol, Text, Pfeil.
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad }) %>
+<ul class="liste">
+  <% for (const eintrag of it.nav.mehr) { %>
+  <li>
+    <a href="<%= eintrag.href %>" class="liste-zeile"<% if (eintrag.aktuell) { %> aria-current="page"<% } %>>
+      <span class="liste-symbol"><%~ include('partials/symbol', { name: eintrag.symbol }) %></span>
+      <span class="liste-text"><%= eintrag.text %></span>
+      <% if (eintrag.zahl) { %><span class="hauptnav-zahl"><span aria-hidden="true"><%= eintrag.zahl > 99 ? '99+' : eintrag.zahl %></span><span class="sr-only">, <%= eintrag.zahl %> <%= eintrag.zahlWort ?? 'ungelesen' %></span></span><% } %>
+      <% if (eintrag.punkt) { %><span class="nav-punkt"><span class="sr-only">Update verfügbar</span></span><% } %>
+      <span class="liste-weiter"><%~ include('partials/symbol', { name: 'weiter' }) %></span>
+    </a>
+  </li>
+  <% } %>
+  <% if (it.nav.abmelden) { %>
+  <li>
+    <form method="post" action="/abmelden">
+      <button type="submit" class="liste-zeile">
+        <span class="liste-symbol"><%~ include('partials/symbol', { name: 'abmelden' }) %></span>
+        <span class="liste-text">Abmelden</span>
+      </button>
+    </form>
+  </li>
+  <% } %>
+</ul>
+<%~ include('partials/versionszeile', { version: it.cockpitVersion, hinweis: it.nav.updateHinweis, tippId: 'update-tipp-mehr', klasse: 'versionszeile-mobil' }) %>

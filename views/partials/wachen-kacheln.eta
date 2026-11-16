@@ -1,0 +1,14 @@
+<%/*
+  Die Kacheln der Wachen (COPI-37), geteilt vom bisherigen Bild der Übersicht („Agenten") und vom Dashboard, wo
+  nur der Betreuer sie sieht („Alle Wachen · nur Betreuer", COPI-81). Angaben: `titel`, `sicht`, `kacheln`.
+*/%>
+<% if (it.kacheln.length > 0) { %>
+<section class="grid gap-2.5" aria-labelledby="agenten">
+  <h2 id="agenten"><%= it.titel %></h2>
+  <ul class="kacheln<%= it.sicht === 'betreuer' ? ' kacheln-betreuer' : '' %>">
+    <% for (const kachel of it.kacheln) { %>
+    <%~ include('./kachel', { kachel: kachel, sicht: it.sicht }) %>
+    <% } %>
+  </ul>
+</section>
+<% } %>

@@ -1,0 +1,60 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Freigabe-Inbox (COPI-139, Teil 1, nur lesen). Angaben: `zeilen` (aus `zeileBauen`), `hinweis` (Text bei Störung der
+  Quelle, sonst `undefined`). Titel und Quelle kommen von fremden Seiten: alles wird escaped, nichts automatisch verlinkt; die Quelladresse steht als Text, der Link öffnet ausdrücklich in neuem Tab.
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, stand: it.stand }) %>
+<div class="meldungen-seite">
+  <% if (it.meldung) { %>
+  <%~ include('partials/hinweis', { art: it.meldung.art, text: it.meldung.text }) %>
+  <% if (it.meldung.adresse) { %>
+  <p class="meldungen-meta">Antwort: <code><%= it.meldung.adresse %></code><% if (it.meldung.link) { %> · <a href="<%= it.meldung.link %>" target="_blank" rel="noopener noreferrer nofollow">Antwort öffnen</a><% } %></p>
+  <% } %>
+  <% } %>
+  <% if (it.hinweis) { %>
+  <%~ include('partials/hinweis', { art: 'fehler', text: it.hinweis }) %>
+  <% } else if (it.zeilen.length === 0) { %>
+  <%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Nichts wartet auf Freigabe', detail: 'Neue Entwürfe der Agenten stehen hier.' } }) %>
+  <% } else { %>
+  <ul class="meldungen-liste">
+    <% for (const zeile of it.zeilen) { %>
+    <li class="meldungen-zeile">
+      <div class="min-w-0">
+        <a href="<%= zeile.href %>" class="meldungen-titel"><%= zeile.quelle %><% if (zeile.titel) { %> · <%= zeile.titel %><% } %></a>
+        <p class="meldungen-meta"><%= zeile.quelleTyp %> · <%= zeile.einordnung %> · <%= zeile.alter %> · <%= zeile.agent %> · <span class="marke"><%= zeile.status %></span></p>
+        <% if (zeile.adresseText) { %>
+        <p class="meldungen-meta">Quelle: <code><%= zeile.adresseText %></code><% if (zeile.adresseLink) { %> · <a href="<%= zeile.adresseLink %>" target="_blank" rel="noopener noreferrer nofollow">Quelle öffnen</a><% } %></p>
+        <% } %>
+      </div>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+  <% if (!it.hinweis) { %>
+  <section aria-labelledby="kennzahlen-titel">
+    <h2 id="kennzahlen-titel" class="meldungen-titel">Kennzahlen</h2>
+    <% if (it.kennzahlen.length === 0) { %>
+    <p class="meldungen-meta">noch keine Daten</p>
+    <% } else { %>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left">
+            <th scope="col">Repo</th><th scope="col">Beiträge</th><th scope="col">beantwortet</th><th scope="col">unbeantwortet</th>
+            <th scope="col">Median (Std.)</th><th scope="col">Maximum (Std.)</th><th scope="col">Stars</th><th scope="col">Forks</th><th scope="col">Stand</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const k of it.kennzahlen) { %>
+          <tr>
+            <th scope="row" class="text-left font-normal"><%= k.repo %></th><td><%= k.beitraege %></td><td><%= k.beantwortet %></td><td><%= k.unbeantwortet %></td>
+            <td><%= k.median %></td><td><%= k.maximum %></td><td><%= k.stars %></td><td><%= k.forks %></td><td><%= k.stand %></td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </section>
+  <% } %>
+</div>

@@ -1,0 +1,99 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Seite eines Kennzahlen-Moduls (COPI-98, Ansichtstyp `kennzahlen`; freigegebener Entwurf „Kennzahlen-Seite
+  KI-Verbrauch"): Kopf mit Pfad, Version und Stand, der Zeitraum als Chips (Links, ohne Skript), gefiltert die Marke
+  mit „Filter aufheben", Warnzeilen des Moduls, dann die Kennzahlen, das Balkendiagramm je Tag, die Aufteilungen und
+  der Block „Wie belastbar sind die Zahlen?". Angaben: `verfuegbar`, `seite` (aus `kennzahlenSeite`).
+
+  Zustände stehen nie nur in Farbe: eine Warnung trägt „Achtung:" im Text. Moduldaten kommen aus einer Fach-View,
+  nicht aus dem Cockpit selbst: alles wird escaped, nichts automatisch verlinkt (dieselbe Regel wie bei
+  Gästeinhalten im Chat, JAC-577). Breiten sind SVG-Attribute, nie `style`.
+
+  Scheitert die Katalogprüfung oder das Lesen, gibt es nur den neutralen Hinweis — Einzelheiten stehen im Log.
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, krume: it.krume, stand: it.stand, unterzeile: it.versionText, zurueck: it.zurueck, aktualisieren: 60 }) %>
+<% if (!it.verfuegbar) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: 'Dieses Modul ist gerade nicht verfügbar.' }) %>
+<% } else { %>
+<% const s = it.seite; %>
+<div class="kennzahlen-seite">
+  <nav class="modul-chips" aria-label="Zeitraum">
+    <% for (const chip of s.chips) { %>
+    <a href="<%= chip.href %>" class="modul-chip"<% if (chip.aktuell) { %> aria-current="true"<% } %>><%= chip.text %></a>
+    <% } %>
+  </nav>
+  <% if (s.filter) { %>
+  <p class="filter-zeile"><span class="filter-marke"><%= s.filter.text %></span><a href="<%= s.filter.aufheben %>" class="abschnitt-link">Filter aufheben</a></p>
+  <% } %>
+  <% for (const hinweis of s.hinweise) { %>
+  <div class="hinweis hinweis-info" role="status">
+    <svg viewBox="0 0 24 24" class="hinweis-symbol" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5.5" /><path d="M12 16.5h.01" /></svg>
+    <div>
+      <p class="hinweis-titel">Achtung: <%= hinweis.titel %></p>
+      <p><%= hinweis.text %></p>
+    </div>
+  </div>
+  <% } %>
+  <% if (s.leer) { %>
+  <%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch keine Werte in diesem Zeitraum', detail: 'Sobald dem Modul Daten gemeldet werden, erscheinen hier Kennzahlen, Verlauf und Aufteilung.' } }) %>
+  <% } else { %>
+  <ul class="kennzahlen" aria-label="Kennzahlen">
+    <% for (const kennzahl of s.kennzahlen) { %>
+    <li class="kennzahl">
+      <span class="kennzahl-label"><%= kennzahl.label %></span>
+      <span class="kennzahl-wert"><%= kennzahl.wert %></span>
+      <% if (kennzahl.zusatz) { %><span class="kennzahl-zusatz"><%= kennzahl.zusatz %></span><% } %>
+    </li>
+    <% } %>
+  </ul>
+  <section class="kennzahl-block" aria-labelledby="kennzahlen-verlauf">
+    <div class="abschnitt-zeile">
+      <h2 id="kennzahlen-verlauf"><%= s.diagramm.titel %></h2>
+      <span class="kennzahl-block-zusatz"><%= s.diagramm.spanne %></span>
+    </div>
+    <%~ include('partials/balken-diagramm', { diagramm: s.diagramm.bild }) %>
+  </section>
+  <% if (s.aufteilungen.length > 0) { %>
+  <div class="aufteilungen">
+    <% s.aufteilungen.forEach((aufteilung, nummer) => { %>
+    <section class="kennzahl-block" aria-labelledby="aufteilung-<%= nummer %>">
+      <h2 id="aufteilung-<%= nummer %>"><%= aufteilung.label %></h2>
+      <% if (aufteilung.zeilen.length === 0) { %>
+      <p class="aufteilung-hinweis">Keine Werte.</p>
+      <% } else { %>
+      <ul class="aufteilung">
+        <% for (const zeile of aufteilung.zeilen) { %>
+        <li class="aufteilung-zeile">
+          <div class="aufteilung-kopf">
+            <% if (zeile.href) { %><a href="<%= zeile.href %>" class="aufteilung-name<% if (zeile.leer) { %> aufteilung-name-leer<% } %>"><%= zeile.name %></a><% } else { %><span class="aufteilung-name<% if (zeile.leer) { %> aufteilung-name-leer<% } %>"><%= zeile.name %></span><% } %>
+            <span class="aufteilung-wert"><%= zeile.wert %></span>
+            <span class="aufteilung-anteil"><%= zeile.anteil %> %</span>
+          </div>
+          <svg class="aufteilung-spur" aria-hidden="true" focusable="false"><rect x="0" y="0" width="100%" height="100%" rx="3" class="band-leer" /><rect x="0" y="0" width="<%= Math.max(zeile.anteil, 1) %>%" height="100%" rx="3" class="diagramm-balken-letzter" /></svg>
+        </li>
+        <% } %>
+      </ul>
+      <% if (aufteilung.weitere) { %><p class="aufteilung-hinweis"><%= aufteilung.weitere %></p><% } %>
+      <% if (aufteilung.hinweis) { %><p class="aufteilung-hinweis"><%= aufteilung.hinweis %></p><% } %>
+      <% } %>
+    </section>
+    <% }) %>
+  </div>
+  <% } %>
+  <% if (s.anteile.length > 0) { %>
+  <section class="kennzahl-block" aria-labelledby="kennzahlen-belastbar">
+    <h2 id="kennzahlen-belastbar">Wie belastbar sind die Zahlen?</h2>
+    <ul class="anteile">
+      <% for (const anteil of s.anteile) { %>
+      <li class="anteil<% if (anteil.warnung) { %> anteil-warnung<% } %>">
+        <span class="anteil-wert"><%= anteil.wert %></span>
+        <span class="anteil-label"><% if (anteil.warnung) { %>Achtung: <% } %><%= anteil.label %></span>
+        <% if (anteil.text) { %><span class="anteil-text"><%= anteil.text %></span><% } %>
+      </li>
+      <% } %>
+    </ul>
+  </section>
+  <% } %>
+  <% } %>
+</div>
+<% } %>

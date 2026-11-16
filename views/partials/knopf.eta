@@ -1,0 +1,2 @@
+<%/* Eine Schaltfläche. Pflicht: `text`. Optional: `art` (`primaer`, Standard, oder `sekundaer`). Immer `type="submit"`: sie steht in einem Formular. */%>
+<button type="submit" class="knopf knopf-<%= it.art ?? 'primaer' %>"><%= it.text %></button>

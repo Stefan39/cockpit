@@ -1,0 +1,26 @@
+# COPI-150 (JAC-740): Änderungen an diesen Pfaden brauchen immer Stefans Review
+# (Branch-Schutz „Require review from Code Owners"). Die Dev-Pipeline (Epic JAC-732)
+# merged solche PRs nie selbst, auch nicht in späteren Phasen.
+
+# CI, Workflows und dieses File selbst
+/.github/                 @Stefan39
+
+# Abhängigkeiten und Laufzeit
+/package.json             @Stefan39
+/package-lock.json        @Stefan39
+/.nvmrc                   @Stefan39
+/renovate.json            @Stefan39
+
+# Gate-Konfiguration (Gates schützen sich nicht selbst)
+/tsconfig.json            @Stefan39
+/tsconfig.build.json      @Stefan39
+/eslint.config.js         @Stefan39
+/vitest.config.ts         @Stefan39
+/.jscpd.json              @Stefan39
+
+# Image, Auslieferung und Datenbankschema
+/docker/                  @Stefan39
+/db/                      @Stefan39
+
+# Architekturentscheidungen und Anweisungen an Agenten
+/docs/adr/                @Stefan39

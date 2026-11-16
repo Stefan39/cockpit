@@ -1,0 +1,28 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Einen weiteren Passkey anlegen (COPI-94), nach der frischen Bestätigung. Angaben: `bestaetigt` (Text des Hinweises)
+  und `fehler`. Das Formular braucht JavaScript (`assets/js/passkey.js`, wie die Einrichtung, nur ohne Passwort): ohne
+  bleibt es verborgen, und der Satz darunter sagt es.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/sicherheit', ziel: 'Anmeldung & Sicherheit' } }) %>
+<%~ include('partials/hinweis', { art: 'ok', text: it.bestaetigt }) %>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<section class="bereich" aria-labelledby="neu-titel">
+  <h2 id="neu-titel" class="bereich-name">Neuer Passkey auf diesem Gerät</h2>
+  <p class="bereich-satz">Das Gerät fragt gleich nach Face ID, Touch ID oder der Geräte-PIN. Der Name hilft nur Ihnen, die Passkeys auseinanderzuhalten.</p>
+  <form method="post" action="/sicherheit/passkey/pruefen" data-passkey data-optionen-url="/sicherheit/passkey/optionen" class="formular" hidden>
+    <p role="alert" data-passkey-meldung class="meldung" hidden></p>
+    <%~ include('partials/feld', { id: 'passkey-name', name: 'name', label: 'Name des Geräts', maxlength: 60, autocomplete: 'off', hilfe: 'Höchstens 60 Zeichen.' }) %>
+    <input type="hidden" name="antwort" value="" />
+    <div class="knopf-reihe">
+      <button type="submit" class="knopf knopf-primaer">Passkey anlegen</button>
+      <a href="/sicherheit" class="knopf knopf-sekundaer">Abbrechen</a>
+    </div>
+  </form>
+  <p class="bereich-satz" data-passkey-ohne-skript>Einen Passkey anlegen geht nur mit JavaScript und einem Gerät, das Passkeys kann.</p>
+  <script type="module" src="/sicherheit/skript.js"></script>
+</section>
+</div>

@@ -1,0 +1,51 @@
+<%/*
+  Der Kopf einer angemeldeten Seite (COPI-43), wie im Prototyp: mobil der Instanzname klein über dem Titel und rechts
+  der runde Dark-Mode-Knopf; am Desktop nur der Titel (Instanzname und Schalter stehen dort in der Sidebar).
+  Angaben: `titel`, `instanz`, `pfad` (Rücksprung des Schalters), optional `ansicht` („Ansicht: Betreuer").
+
+  Seit COPI-82 (Kacheln der Modulseite) zusätzlich optional: `krume` (vorangehende Pfadstufen, je
+  `{ text, href }` — die letzte Stufe ist `titel` selbst, kein eigener Link) und `stand` („Stand: heute, 09:50",
+  am Desktop rechts neben dem Titel, mobil darunter) und `unterzeile` (COPI-84: kleiner Text unter dem Titel, etwa
+  „Version 3 · eingespielt am 27.09.2026" der Modulseiten).
+
+  Seit COPI-100 optional `zurueck` (`{ href, ziel }`, `src/module/rueckweg.ts`): der runde Zurück-Knopf links neben dem
+  Titel wie im Prototyp, nur auf dem Telefon — am Desktop führen Sidebar, Brotkrume und Listenspalte zurück.
+
+  Seit COPI-105 optional `aktualisieren` (Sekunden): die Seite lädt sich neu, sobald ihr Stand älter ist
+  (`assets/js/pwa.js`). Nur für Seiten ohne Eingaben, die einen Zustand zeigen; zusammen mit `stand`.
+*/%>
+<div class="seiten-kopf"<% if (it.aktualisieren) { %> data-aktualisieren="<%= it.aktualisieren %>"<% } %>>
+  <div class="min-w-0">
+    <% if (it.instanz) { %>
+    <p class="seiten-instanz"><%= it.instanz %></p>
+    <% } %>
+    <% if (it.krume) { %>
+    <p class="seiten-krume">
+      <% for (const stufe of it.krume) { %><a href="<%= stufe.href %>"><%= stufe.text %></a><span aria-hidden="true"> / </span><% } %><%= it.titel %>
+    </p>
+    <% } %>
+    <% if (it.zurueck) { %>
+    <div class="seiten-titel-zeile">
+      <a href="<%= it.zurueck.href %>" class="seiten-zurueck" aria-label="Zurück zu <%= it.zurueck.ziel %>"><%~ include('./symbol', { name: 'zurueck' }) %></a>
+      <h1><%= it.titel %></h1>
+    </div>
+    <% } else { %>
+    <h1><%= it.titel %></h1>
+    <% } %>
+    <% if (it.unterzeile) { %>
+    <p class="seiten-unterzeile"><%= it.unterzeile %></p>
+    <% } %>
+    <% if (it.stand) { %>
+    <p class="seiten-stand-zeile seiten-stand-zeile-mobil">Stand: <%= it.stand %></p>
+    <% } %>
+  </div>
+  <div class="seiten-kopf-rechts">
+    <% if (it.stand) { %>
+    <span class="seiten-stand-zeile seiten-stand-zeile-desktop">Stand: <%= it.stand %></span>
+    <% } %>
+    <% if (it.ansicht) { %>
+    <span class="ansicht">Ansicht: <%= it.ansicht %></span>
+    <% } %>
+    <%~ include('./darstellung', { pfad: it.pfad, art: 'rund' }) %>
+  </div>
+</div>

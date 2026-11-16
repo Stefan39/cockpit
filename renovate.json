@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["* 0-6 1 * *"],
+  "labels": ["dependencies"],
+  "dockerfile": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "automerge": false
+    },
+    {
+      "description": "Weniger PRs, weniger CI-Läufe (COPI-76): Renovate läuft einmal im Monat (Zeitplan oben: am 1., nachts; Sicherheitsmeldungen kommen unabhängig davon sofort). Alle Updates von GitHub-Actions in einem PR.",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Minor- und Patch-Updates der npm-Pakete in einem PR (COPI-76). Majors bleiben einzeln, weil jedes einzeln geprüft werden muss.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm (minor und patch)"
+    },
+    {
+      "description": "Die Compose-Vorlage der Kundeninstanz bleibt unberührt (COPI-51): Dort steht der Platzhalter <DIGEST>, und welcher Digest eine Instanz fährt, entscheidet ein Update-Antrag samt Freigabe — nie ein Bot (ADR 13.1, 'Updates sind Anträge'). Renovate kann den Digest ohnehin nicht auflösen: Das Paket ist privat.",
+      "matchFileNames": ["docker/compose.fragment.yaml"],
+      "enabled": false
+    },
+    {
+      "description": "TypeScript vorerst unter 7 (COPI-74): typescript-eslint unterstützt TS 7 noch nicht (Peer-Bereich <6.1, Tracking typescript-eslint/typescript-eslint#10940). Renovate schlägt damit TypeScript 6 vor. Regel entfernen, sobald typescript-eslint TS 7 unterstützt.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
+    },
+    {
+      "description": "PostgreSQL bleibt auf 16 (COPI-227): Die Produktion der Kundenstacks läuft auf PostgreSQL 16, Tests und Dev-Stack sollen dieselbe Hauptversion nutzen. Eine neue Hauptversion der Datenbank ist ein eigenes Projekt, kein Renovate-Update (Postgres 18 braucht außerdem ein anderes Datenverzeichnis). Regel erst mit dem geplanten Datenbank-Upgrade entfernen.",
+      "matchPackageNames": ["postgres"],
+      "allowedVersions": "<17"
+    }
+  ]
+}

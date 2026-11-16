@@ -1,0 +1,11 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Wenn ein Update-Antrag nicht durchgeht (COPI-40): kein Recht, keine gültige Bestätigung (403) oder ein Fehler beim
+  Schreiben (500). Angaben: `titel`, `text` (ein fester Satz, nie eine Meldung der Datenbank). Kein Digest, keine
+  Einzelheit.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/einstellungen', ziel: 'Einstellungen' } }) %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.text }) %>
+<p><a href="/einstellungen" class="knopf knopf-sekundaer">Zurück zu den Einstellungen</a></p>
+</div>

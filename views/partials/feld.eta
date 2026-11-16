@@ -1,0 +1,13 @@
+<%/*
+  Ein Formularfeld mit Beschriftung. Pflicht: `id`, `label`. Optional: `name` (ohne: das Feld wird
+  nicht abgeschickt), `typ` (Standard `text`), `autocomplete`, `wert`, `minlength`, `maxlength`,
+  `inputmode`, `autocapitalize`, `spellcheck`, `nurLesen`, `mono`, `pflicht` (Standard ja), `hilfe`.
+  Alle Werte werden escaped.
+*/%>
+<div class="feld">
+  <label for="<%= it.id %>"><%= it.label %></label>
+  <input class="eingabe<% if (it.mono) { %> font-mono<% } %>" type="<%= it.typ ?? 'text' %>" id="<%= it.id %>"<% if (it.name) { %> name="<%= it.name %>"<% } %><% if (it.pflicht !== false && !it.nurLesen) { %> required<% } %><% if (it.wert !== undefined) { %> value="<%= it.wert %>"<% } %><% if (it.minlength) { %> minlength="<%= it.minlength %>"<% } %><% if (it.maxlength) { %> maxlength="<%= it.maxlength %>"<% } %><% if (it.autocomplete) { %> autocomplete="<%= it.autocomplete %>"<% } %><% if (it.inputmode) { %> inputmode="<%= it.inputmode %>"<% } %><% if (it.autocapitalize) { %> autocapitalize="<%= it.autocapitalize %>"<% } %><% if (it.spellcheck) { %> spellcheck="<%= it.spellcheck %>"<% } %><% if (it.nurLesen) { %> readonly<% } %><% if (it.hilfe) { %> aria-describedby="<%= it.id %>-hilfe"<% } %> />
+  <% if (it.hilfe) { %>
+  <p class="hilfe" id="<%= it.id %>-hilfe"><%= it.hilfe %></p>
+  <% } %>
+</div>

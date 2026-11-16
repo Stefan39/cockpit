@@ -1,0 +1,24 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Authenticator-App neben einem Passkey einrichten (COPI-94), nach der frischen Bestätigung. Better Auth verlangt
+  für das Einrichten zusätzlich das Passwort (`enableTwoFactor`). Angaben: `bestaetigt`, `fehler`. Danach folgt die
+  Seite mit dem QR-Code (`zwei-faktor-code.eta`, hier ohne Ersatzcodes: die bisherigen gelten weiter).
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/sicherheit', ziel: 'Anmeldung & Sicherheit' } }) %>
+<%~ include('partials/hinweis', { art: 'ok', text: it.bestaetigt }) %>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<section class="bereich" aria-labelledby="totp-titel">
+  <h2 id="totp-titel" class="bereich-name">Authenticator-App einrichten</h2>
+  <p class="bereich-satz">Zum Einrichten bitte zusätzlich das Passwort eingeben. Danach zeigt das Cockpit einen QR-Code für die App.</p>
+  <form method="post" action="/sicherheit/totp" class="formular">
+    <%~ include('partials/feld', { id: 'passwort', name: 'passwort', typ: 'password', label: 'Passwort', autocomplete: 'current-password' }) %>
+    <div class="knopf-reihe">
+      <button type="submit" class="knopf knopf-primaer">Weiter</button>
+      <a href="/sicherheit" class="knopf knopf-sekundaer">Abbrechen</a>
+    </div>
+  </form>
+</section>
+</div>

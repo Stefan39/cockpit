@@ -1,0 +1,7 @@
+<%/*
+  Ein Stundenband (COPI-81): je Stunde ein Segment, grün/gelb/rot, ohne Daten neutral. Inline-SVG, serverseitig
+  gerendert: Lage und Größe nur über Attribute (`x`, `width`, …), die Farbe über CSS-Klassen, nie ein
+  `style`-Attribut. Die Höhe setzt das CSS (`klasse`), das SVG dehnt sich (`preserveAspectRatio="none"`).
+  Die Farbe steht nie allein: `band.text` ist die Textalternative (WCAG 1.4.1). Angaben: `band`, `klasse`.
+*/%>
+<svg class="band <%= it.klasse %>" viewBox="0 0 <%= it.band.segmente.length * 10 - 2 %> 16" preserveAspectRatio="none" role="img" aria-label="<%= it.band.text %>" focusable="false"><title><%= it.band.text %></title><% it.band.segmente.forEach((status, i) => { %><rect x="<%= i * 10 %>" y="0" width="8" height="16" rx="1.5" class="band-<%= status %>" /><% }) %></svg>

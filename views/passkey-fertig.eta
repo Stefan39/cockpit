@@ -1,0 +1,18 @@
+<% layout('layout') %>
+<h1>Passkey eingerichtet</h1>
+<p>
+  Der zweite Faktor ist aktiv. Falls das Gerät verloren geht, führen diese
+  Ersatzcodes zurück in den Zugang. Jeder gilt einmal.
+</p>
+
+<section class="abschnitt">
+  <h2>Ersatzcodes</h2>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Werden nur einmal angezeigt — bitte jetzt sicher notieren:' }) %>
+  <ul class="codes">
+    <% for (const code of it.ersatzcodes) { %>
+    <li><code><%= code %></code></li>
+    <% } %>
+  </ul>
+</section>
+
+<a href="/" class="knopf knopf-primaer">Weiter zum Cockpit</a>

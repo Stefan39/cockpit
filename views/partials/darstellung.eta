@@ -1,0 +1,13 @@
+<%/*
+  Der Schalter „Dark Mode" (COPI-43) — ein Formular, kein Skript. Angaben: `pfad` (Rücksprung) und `art`: `breit`
+  (Sidebar, mit Text) oder `rund` (mobiler Kopf, nur Symbol, der Text bleibt für Screenreader). Beide Knöpfe stehen
+  im Markup; welcher sichtbar ist, entscheidet das CSS nach dem gerade geltenden Modus (`nur-hell`, `nur-dunkel`).
+  „Wie System" (COPI-117) vergisst eine feste Wahl wieder; das CSS zeigt ihn nur, wenn eine gesetzt ist
+  (`nur-gewaehlt`, `data-theme` am Wurzelelement) — so braucht das Partial den Zustand nicht zu kennen.
+*/%>
+<form method="post" action="/darstellung" class="darstellung darstellung-<%= it.art %>">
+  <input type="hidden" name="zurueck" value="<%= it.pfad %>" />
+  <button type="submit" name="darstellung" value="dunkel" class="darstellung-knopf nur-hell"><%~ include('./symbol', { name: 'mond' }) %><span class="darstellung-text">Dark Mode</span></button>
+  <button type="submit" name="darstellung" value="hell" class="darstellung-knopf nur-dunkel"><%~ include('./symbol', { name: 'sonne' }) %><span class="darstellung-text">Light Mode</span></button>
+  <button type="submit" name="darstellung" value="auto" class="darstellung-knopf nur-gewaehlt"><%~ include('./symbol', { name: 'system' }) %><span class="darstellung-text">Wie System</span></button>
+</form>

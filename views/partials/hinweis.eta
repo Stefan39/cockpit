@@ -1,0 +1,21 @@
+<%/*
+  Hinweisbox. Angaben: `art` (`fehler`, `info`, `ok`) und `text` (wird escaped).
+  Ein Fehler ist ein `alert`, ein Erfolg ein `status`; ein Hinweis ohne Dringlichkeit hat keine Rolle.
+*/%>
+<%
+const rollen = { fehler: 'alert', ok: 'status' };
+const rolle = rollen[it.art];
+%>
+<div class="hinweis hinweis-<%= it.art %>"<% if (rolle) { %> role="<%= rolle %>"<% } %>>
+  <svg viewBox="0 0 24 24" class="hinweis-symbol" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <% if (it.art === 'ok') { %>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8 12.5l2.7 2.7L16 9.5" />
+    <% } else { %>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7.5v5.5" />
+    <path d="M12 16.5h.01" />
+    <% } %>
+  </svg>
+  <p><%= it.text %></p>
+</div>

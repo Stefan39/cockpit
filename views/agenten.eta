@@ -1,0 +1,14 @@
+<% layout('layout', { nav: it.nav }) %>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/mehr', ziel: 'Mehr' } }) %>
+<% if (it.agenten.stand) { %>
+<p class="stand-inventar">Stand des Inventars: <%= it.agenten.stand %></p>
+<% } %>
+<% if (it.agenten.karten.length === 0) { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch kein Inventar gemeldet', detail: 'Sobald der Betrieb seine Agenten meldet, erscheinen sie hier.' } }) %>
+<% } else { %>
+<ul class="agenten">
+  <% for (const karte of it.agenten.karten) { %>
+  <%~ include('partials/agent-karte', { karte, sicht: it.sicht }) %>
+  <% } %>
+</ul>
+<% } %>

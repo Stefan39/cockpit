@@ -1,0 +1,28 @@
+<%/*
+  Die Liste der Zeilen eines Moduls (COPI-78), geteilt von `modul.eta` (dort mobil und als linke Spalte am
+  Desktop) und `modul-detail.eta` (dort nur als linke Spalte am Desktop, mobil ausgeblendet — Review COPI-78:
+  Liste und Detail nebeneinander wie im Prototyp „Buchungen"). Angaben: `zeilen` (aus `modulListeAnsicht`),
+  `aktuelleId` (optional: die `id` der gerade angezeigten Zeile, markiert die Zeile mit `aria-current`). Eine
+  übernommene Zeile (COPI-85, `zeile.sperre`) trägt neben der Zeit die Marke „übernommen · <Vorname>", eine Zeile mit
+  `marke` aus der View (COPI-91, etwa „Grenzfall") diese als Pille, eine Zeile mit geltender Entscheidung (COPI-91)
+  „Interessant · Stefan" in der Akzentfarbe.
+  Moduldaten kommen aus einer Fach-View: alles wird escaped, nichts automatisch verlinkt (JAC-577).
+*/%>
+<% if (it.zeilen.length === 0) { %>
+<%~ include('./status-karte', { status: { farbe: 'leer', satz: 'Noch keine Einträge', detail: 'Sobald es hier etwas gibt, erscheint es in dieser Liste.' } }) %>
+<% } else { %>
+<ul class="liste">
+  <% for (const zeile of it.zeilen) { %>
+  <li>
+    <a href="<%= zeile.href %>" class="liste-zeile"<% if (it.aktuelleId !== undefined && zeile.id === it.aktuelleId) { %> aria-current="true"<% } %>>
+      <span class="punkt punkt-<%= zeile.status.farbe %>" aria-hidden="true"></span>
+      <span class="liste-text">
+        <span class="meldungen-titel"><%= zeile.titel %></span>
+        <span class="liste-meta-zeile"><span class="meldungen-meta"><%= zeile.status.wort %> · <%= zeile.aktualisiertAm %></span><% if (zeile.marke) { %><span class="zeilen-marke"><%= zeile.marke %></span><% } %><% if (zeile.entscheidung) { %><span class="entscheidung-marke"><%= zeile.entscheidung %></span><% } %><% if (zeile.sperre) { %><%~ include('./sperr-marke', { sperre: zeile.sperre }) %><% } %></span>
+      </span>
+      <span class="liste-weiter"><%~ include('./symbol', { name: 'weiter' }) %></span>
+    </a>
+  </li>
+  <% } %>
+</ul>
+<% } %>

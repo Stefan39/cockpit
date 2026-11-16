@@ -1,0 +1,68 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Benutzer (COPI-45, ADR Abschnitt 5): jedes Konto mit Rolle, Stand und zweitem Faktor, dazu die offenen Einladungen.
+  Nur für das Recht `benutzer_sehen` (die Route prüft es). Angaben: `liste` (`konten`, `einladungen` aus
+  `benutzerListe`), `einladen` (darf einladen: dann der Knopf dazu). Aufgebaut wie die Seite Agenten: je Konto eine
+  Karte. Der Prototyp hat keinen eigenen Bildschirm dafür.
+
+  Alles wird escaped, nichts verlinkt — auch Namen und Adressen nicht: sie stammen aus Einladung und Kontoanlage.
+
+  Bearbeiten (COPI-46): `konto.bearbeiten` ist die Seite des Kontos, nur wenn der Ansehende daran etwas darf; `erledigt`
+  meldet, dass ein Konto entfernt wurde.
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/mehr', ziel: 'Mehr' } }) %>
+<% if (it.erledigt) { %>
+<%~ include('partials/hinweis', { art: 'ok', text: it.erledigt }) %>
+<% } %>
+<section class="seiten-abschnitt" aria-labelledby="konten-titel">
+  <h2 id="konten-titel">Konten</h2>
+  <% if (it.liste.konten.length === 0) { %>
+  <p class="agent-leer">Noch kein Konto angelegt.</p>
+  <% } else { %>
+  <ul class="konten">
+    <% for (const konto of it.liste.konten) { %>
+    <li class="konto">
+      <div class="konto-kopf">
+        <h3 class="agent-name"><%= konto.name %><% if (konto.selbst) { %> <span class="marke">Sie</span><% } %></h3>
+        <span class="plakette plakette-<%= konto.stand.farbe %>"><%= konto.stand.text %></span>
+      </div>
+      <p class="konto-adresse"><%= konto.email %></p>
+      <dl class="werte">
+        <div><dt>Rolle</dt><dd><%= konto.rolle %></dd></div>
+        <div><dt>Zweiter Faktor</dt><dd><%= konto.faktor %></dd></div>
+        <% if (konto.stand.hinweis) { %>
+        <div><dt>Stand</dt><dd class="wert-warn"><%= konto.stand.hinweis %></dd></div>
+        <% } %>
+        <div><dt>Angelegt</dt><dd><%= konto.angelegt %></dd></div>
+        <div><dt>Zuletzt angemeldet</dt><dd><%= konto.zuletzt %></dd></div>
+      </dl>
+      <% if (konto.bearbeiten) { %>
+      <div><a href="<%= konto.bearbeiten %>" class="knopf knopf-sekundaer">Bearbeiten</a></div>
+      <% } %>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+</section>
+<section class="seiten-abschnitt" aria-labelledby="einladungen-titel">
+  <h2 id="einladungen-titel">Offene Einladungen</h2>
+  <% if (it.liste.einladungen.length === 0) { %>
+  <p class="agent-leer">Keine offenen Einladungen.</p>
+  <% } else { %>
+  <ul class="konten">
+    <% for (const einladung of it.liste.einladungen) { %>
+    <li class="konto">
+      <h3 class="agent-name konto-adresse-name"><%= einladung.email %></h3>
+      <dl class="werte">
+        <div><dt>Rolle</dt><dd><%= einladung.rolle %></dd></div>
+        <div><dt>Eingeladen von</dt><dd><%= einladung.von %></dd></div>
+        <div><dt>Gültigkeit</dt><dd><%= einladung.ablauf %></dd></div>
+      </dl>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+  <% if (it.einladen) { %>
+  <div><a href="/einladung" class="knopf knopf-akzent">Jemanden einladen</a></div>
+  <% } %>
+</section>

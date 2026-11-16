@@ -1,0 +1,21 @@
+<%/*
+  Eine Kachel der Übersicht (COPI-37, kompakt wie im Prototyp seit COPI-43). Angaben: `kachel` und `sicht`
+  (`kunde` oder `betreuer`). Kunde: Punkt, Name und „<Statuswort> · vor 4 Min. geprüft" — der Text der Meldung steht
+  in der Statuskarte und unter „Letzte Meldungen". Die Farbe steht nie allein: das Wort daneben nennt den Zustand.
+  Betreuer: dazu Kennung, Sichtbarkeit, Rohbefund und der Klartext des Kunden. Alles wird escaped, nichts verlinkt.
+*/%>
+<li class="kachel kachel-<%= it.kachel.farbe %>">
+  <div class="kachel-kopf">
+    <span class="punkt punkt-<%= it.kachel.farbe %>" aria-hidden="true"></span>
+    <span class="kachel-name"><%= it.kachel.name %></span>
+  </div>
+  <% if (it.sicht === 'betreuer') { %>
+  <%/* Ohne Anzeigenamen ist die Kennung schon der Titel; sie steht dann nicht noch einmal darunter. */%>
+  <p class="kachel-kennung"><% if (it.kachel.kennung !== it.kachel.name) { %><code><%= it.kachel.kennung %></code> <% } %><% if (it.kachel.kundensichtbar === true) { %><span class="marke">für Kunden sichtbar</span><% } else if (it.kachel.kundensichtbar === false) { %><span class="marke">nur intern</span><% } %></p>
+  <p class="kachel-text"><%= it.kachel.text %></p>
+  <% if (it.kachel.kundenText) { %>
+  <p class="kachel-kunde"><span class="kachel-kunde-label">Klartext für Kunden:</span> <%= it.kachel.kundenText %></p>
+  <% } %>
+  <% } %>
+  <p class="kachel-zeit<%= it.kachel.ueberfaellig ? ' kachel-zeit-warn' : '' %>"><span class="kachel-wort kachel-wort-<%= it.kachel.farbe %>"><%= it.kachel.statusWort %></span> · <%= it.kachel.geprueft %></p>
+</li>

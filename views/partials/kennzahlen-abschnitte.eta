@@ -1,0 +1,20 @@
+<%/*
+  Die Abschnitte der Kennzahlen-Module auf der Übersicht (COPI-98): je Modul eine Überschrift mit „Ansehen" und die
+  Karte (`partials/kennzahlen-karte`). Ist die View nicht lesbar, steht dort der neutrale Hinweis. Ohne Karten
+  entsteht nichts. Angaben: `karten` (aus `kennzahlenKartenLesen`), `stand`.
+*/%>
+<% for (const karte of it.karten ?? []) { %>
+<section class="grid min-w-0 gap-2.5" aria-labelledby="modul-<%= karte.kennung %>">
+  <div class="abschnitt-zeile">
+    <h2 id="modul-<%= karte.kennung %>"><%= karte.titel %></h2>
+    <a href="<%= karte.href %>" class="abschnitt-link">Ansehen<span class="sr-only">: <%= karte.titel %></span></a>
+  </div>
+  <% if (!karte.verfuegbar) { %>
+  <%~ include('./hinweis', { art: 'fehler', text: 'Dieses Modul ist gerade nicht verfügbar.' }) %>
+  <% } else { %>
+  <div class="kennzahl-karten">
+    <%~ include('./kennzahlen-karte', { karte: karte, stand: it.stand }) %>
+  </div>
+  <% } %>
+</section>
+<% } %>

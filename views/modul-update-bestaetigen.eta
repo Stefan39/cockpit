@@ -1,0 +1,35 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Bestätigung eines Modul-Antrags (COPI-106), wie beim Cockpit-Image (`update-bestaetigen.eta`): laufender Stand
+  (Herkunft, der Weg zurück) und Ziel-Commit vollständig. Angaben: `modul` (`kennung`, `name`, `version`), `vorher`,
+  `ziel`, `bis` und `token` (signiert, `status/update-antrag.ts`). Erst dieses Formular stellt den Antrag. Vom Knopf
+  „Update installieren" (COPI-140): `quelle` (`wache`) und `hinweis`, wenn die Wache inzwischen ein anderes Ziel meldet.
+  Freigabemodus (COPI-141): `modus` (wird weitergetragen) und `notweg`, siehe `partials/freigabe-ankuendigung.eta`.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/einstellungen', ziel: 'Einstellungen' } }) %>
+<section class="bereich" aria-labelledby="bestaetigen-titel">
+  <h2 id="bestaetigen-titel" class="bereich-name">Modul · <%= it.modul.name %></h2>
+  <p class="bereich-satz">Bitte prüfen: Das Modul soll vom eingespielten Stand auf den Ziel-Commit wechseln.</p>
+  <% if (it.hinweis) { %>
+  <%~ include('partials/hinweis', { art: 'info', text: it.hinweis }) %>
+  <% } %>
+  <dl class="digests">
+    <div><dt>Läuft jetzt (Version <%= it.modul.version %>)</dt><dd><code class="digest-voll"><%= it.vorher %></code></dd></div>
+    <div><dt>Ziel</dt><dd><code class="digest-voll"><%= it.ziel %></code></dd></div>
+  </dl>
+  <%~ include('partials/freigabe-ankuendigung', { modus: it.modus, notweg: it.notweg, rueckfrage: 'Das Cockpit spielt nichts ein. Der Antrag wird außerhalb des Cockpits freigegeben, danach holt der Admin-Agent Block und View dieses Commits und spielt erst die View, dann den Block ein. Verlangt der Block eine Fachmigration, die fehlt, bricht er vorher ab. Bis zur Freigabe lässt sich der Antrag in den Einstellungen zurückziehen.' }) %>
+  <form method="post" action="/einstellungen/modul-update/bestaetigen" class="knopf-reihe">
+    <input type="hidden" name="modul" value="<%= it.modul.kennung %>" />
+    <input type="hidden" name="ziel" value="<%= it.ziel %>" />
+    <% if (it.quelle) { %>
+    <input type="hidden" name="quelle" value="<%= it.quelle %>" />
+    <% } %>
+    <input type="hidden" name="modus" value="<%= it.modus %>" />
+    <input type="hidden" name="bis" value="<%= it.bis %>" />
+    <input type="hidden" name="token" value="<%= it.token %>" />
+    <%~ include('partials/knopf', { text: it.modus === 'direkt' ? 'Freigeben und installieren' : 'Antrag stellen' }) %>
+    <a href="/einstellungen" class="knopf knopf-sekundaer">Abbrechen</a>
+  </form>
+</section>
+</div>

@@ -1,0 +1,17 @@
+<%/*
+  Das Balkendiagramm einer Kennzahlen-Seite (COPI-98): ein Balken je Kalendertag, der letzte hervorgehoben, links die
+  Skala, unten bis zu fünf Tage. Inline-SVG wie das Wochendiagramm (`partials/woche-diagramm.eta`): Lage und Größe nur
+  als Attribute, Farbe als Klasse, kein `style`. `diagramm.text` ist die Textalternative; die Achsen sind für
+  Vorleser ausgeblendet, weil der Text sie schon nennt. Angaben: `diagramm` (aus `diagrammAus`), optional `kurz`
+  (die niedrigere Form der Karte auf der Übersicht, ohne Skala).
+*/%>
+<% const d = it.diagramm; %>
+<span class="diagramm<% if (it.kurz) { %> diagramm-kurz<% } %>">
+  <% if (!it.kurz) { %>
+  <span class="diagramm-skala" aria-hidden="true"><% for (const marke of d.skala) { %><span><%= marke %></span><% } %></span>
+  <% } %>
+  <span class="diagramm-feld">
+    <svg class="diagramm-bild" viewBox="0 0 <%= d.breite %> <%= d.hoehe %>" preserveAspectRatio="none" role="img" aria-label="<%= d.text %>" focusable="false"><title><%= d.text %></title><line x1="0" x2="<%= d.breite %>" y1="3" y2="3" class="diagramm-linie" /><line x1="0" x2="<%= d.breite %>" y1="<%= d.hoehe / 2 + 1.5 %>" y2="<%= d.hoehe / 2 + 1.5 %>" class="diagramm-linie" /><line x1="0" x2="<%= d.breite %>" y1="<%= d.hoehe %>" y2="<%= d.hoehe %>" class="diagramm-linie diagramm-linie-basis" /><% for (const balken of d.balken) { %><rect x="<%= balken.x %>" y="<%= balken.y %>" width="<%= balken.breite %>" height="<%= balken.hoehe %>" rx="1.5" class="diagramm-balken<% if (balken.letzter) { %> diagramm-balken-letzter<% } %>"><title><%= balken.titel %></title></rect><% } %></svg>
+    <span class="diagramm-achse" aria-hidden="true"><% for (const tag of d.achse) { %><span><%= tag %></span><% } %></span>
+  </span>
+</span>

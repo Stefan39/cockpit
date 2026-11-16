@@ -1,0 +1,51 @@
+<%/*
+  Eine Karte des Dashboards (COPI-81): Kürzel, Titel, Status als Pille (Punkt + Wort), Kurztext, 24-Stunden-Band mit
+  Achse und „Zuletzt geprüft". Die ganze Karte ist ein Link auf die Detailseite der Zeile. Rot und Gelb sind getönt
+  und gerahmt, Grün ruhig. Moduldaten kommen aus einer Fach-View: alles wird escaped, nichts verlinkt (JAC-577).
+
+  Mit Messwert (COPI-83, `karte.messwert`, nur wenn die Zeile einen `wert` trägt): unter dem Kopf groß der Wert mit
+  Einheit und Bezug, bei `wert_max` ein Füllbalken, darunter die 24-Std.-Kurve mit der Zeile „vor 24 Std. · 80 – 86 %
+  · jetzt", dann der Kurztext. Die Kurve ersetzt das Band; ohne Werte im Zeitfenster fällt beides weg. Ohne Messwert
+  ist die Karte genau wie vor COPI-83. Angabe: `karte` (aus `dashboardAnsicht`).
+
+  Übernommen (COPI-85, `karte.sperre`): direkt unter der Kopfzeile die Marke „übernommen · <Vorname>" — eine eigene
+  Zeile statt einer dritten Pille in der Kopfzeile, die mobil sonst den Titel verdrängte.
+*/%>
+<% const m = it.karte.messwert; %>
+<li class="min-w-0">
+  <a href="<%= it.karte.href %>" class="dienst dienst-<%= it.karte.wertung %>">
+    <span class="dienst-kopf">
+      <%~ include('./dienst-kuerzel', { kuerzel: it.karte.kuerzel, farbe: it.karte.wertung }) %>
+      <span class="dienst-titel"><%= it.karte.titel %></span>
+      <span class="pille pille-<%= it.karte.status.farbe %>"><span class="punkt punkt-<%= it.karte.status.farbe %>" aria-hidden="true"></span><%= it.karte.status.wort %></span>
+    </span>
+    <% if (it.karte.sperre) { %>
+    <%~ include('./sperr-marke', { sperre: it.karte.sperre }) %>
+    <% } %>
+    <% if (m) { %>
+    <span class="messwert">
+      <span class="messwert-zeile">
+        <span><span class="messwert-wert messwert-wert-<%= m.farbe %>"><%= m.wert %></span><% if (m.einheit !== '') { %> <span class="messwert-einheit"><%= m.einheit %></span><% } %></span>
+        <% if (m.bezug) { %><span class="messwert-bezug"><%= m.bezug %></span><% } %>
+      </span>
+      <% if (m.balken !== undefined) { %><%~ include('./messwert-balken', { prozent: m.balken, farbe: m.farbe }) %><% } %>
+    </span>
+    <% if (m.kurve) { %>
+    <span class="dienst-band">
+      <%~ include('./messwert-kurve', { kurve: m.kurve, farbe: m.farbe, klasse: 'kurve-karte' }) %>
+      <span class="band-achse"><span>vor 24 Std.</span><span><%= m.kurve.spanne %></span><span>jetzt</span></span>
+    </span>
+    <% } %>
+    <% } %>
+    <% if (it.karte.kurztext !== '') { %>
+    <span class="dienst-text"><%= it.karte.kurztext %></span>
+    <% } %>
+    <% if (!m) { %>
+    <span class="dienst-band">
+      <%~ include('./band', { band: it.karte.band, klasse: 'band-karte' }) %>
+      <span class="band-achse"><span>vor 24 Std.</span><span><%= it.karte.verfuegbarkeit %></span><span>jetzt</span></span>
+    </span>
+    <% } %>
+    <span class="dienst-zeit"><%= it.karte.geprueft %></span>
+  </a>
+</li>

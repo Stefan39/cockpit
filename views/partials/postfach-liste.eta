@@ -1,0 +1,19 @@
+<%/*
+  Die Zeilen eines Postfachs (COPI-112), jüngste zuerst, Ungelesenes fett mit Punkt; geteilt von der Chat-Seite
+  (`/chat/postfach/<kennung>`) und der Detailseite eines Agenten (COPI-113, Reiter „Mails"). Angabe: `zeilen` (aus
+  `postfachAnsicht`). Fremdtext aus der Fach-View: escaped, nie verlinkt (JAC-577).
+*/%>
+<ul class="postfach-liste">
+  <% for (const zeile of it.zeilen) { %>
+  <li>
+    <a href="<%= zeile.href %>" class="postfach-zeile<% if (zeile.ungelesen) { %> postfach-zeile-neu<% } %>">
+      <span class="posteingang-punkt<% if (!zeile.ungelesen) { %> postfach-punkt-gelesen<% } %>" aria-hidden="true"></span>
+      <span class="postfach-text">
+        <span class="postfach-kopf"><span class="postfach-titel"><%= zeile.titel %></span><span class="postfach-zeit"><%= zeile.zeit %></span></span>
+        <% if (zeile.anriss) { %><span class="postfach-anriss"><%= zeile.anriss %></span><% } %>
+        <span class="postfach-status"><span class="punkt punkt-<%= zeile.status.farbe %>" aria-hidden="true"></span><%= zeile.status.wort %><% if (zeile.ungelesen) { %><span class="sr-only">, ungelesen</span><% } %></span>
+      </span>
+    </a>
+  </li>
+  <% } %>
+</ul>

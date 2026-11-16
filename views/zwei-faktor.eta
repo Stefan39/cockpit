@@ -1,0 +1,41 @@
+<% layout('layout') %>
+<h1>Zweiten Faktor einrichten</h1>
+<p>
+  Dieser Zugang ist erst vollständig nutzbar, wenn ein zweiter Faktor
+  eingerichtet ist. Bitte zur Bestätigung das Passwort erneut eingeben.
+</p>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<% if (it.passkeyAngeboten) { %>
+<%/* Verborgen, bis das Skript da ist und der Browser WebAuthn kann (COPI-26):
+     ohne JavaScript bleibt TOTP der Weg. */%>
+<form method="post" action="/zwei-faktor/passkey/pruefen" data-passkey
+      data-optionen-url="/zwei-faktor/passkey/optionen" class="formular" hidden>
+  <h2>Passkey (empfohlen)</h2>
+  <p>
+    Bestätigung mit Fingerabdruck, Gesicht oder der PIN des Geräts. Zur
+    Bestätigung das Passwort eingeben.
+  </p>
+  <p role="alert" data-passkey-meldung class="meldung" hidden></p>
+  <%~ include('partials/feld', { id: 'passkey-passwort', name: 'passwort', typ: 'password', label: 'Passwort', autocomplete: 'current-password' }) %>
+  <%~ include('partials/feld', { id: 'passkey-name', name: 'name', label: 'Name des Geräts (optional)', maxlength: 60, autocomplete: 'off', pflicht: false }) %>
+  <input type="hidden" name="antwort" value="" />
+  <%~ include('partials/knopf', { text: 'Passkey einrichten' }) %>
+</form>
+<script type="module" src="/zwei-faktor/passkey/skript.js"></script>
+<% } %>
+
+<section class="abschnitt">
+  <% if (it.passkeyAngeboten) { %>
+  <h2>Authenticator-App (TOTP)</h2>
+  <% } %>
+  <form method="post" action="/zwei-faktor/einrichten" class="formular">
+    <%~ include('partials/feld', { id: 'passwort', name: 'passwort', typ: 'password', label: 'Passwort', autocomplete: 'current-password' }) %>
+    <%~ include('partials/knopf', { text: 'Weiter' }) %>
+  </form>
+</section>
+
+<form method="post" action="/abmelden" class="abschnitt">
+  <%~ include('partials/knopf', { text: 'Abmelden', art: 'sekundaer' }) %>
+</form>

@@ -1,0 +1,3185 @@
+/*
+ * Tailwind-Quelle des Cockpits (COPI-30). Sie wird beim Bauen zu einem Stylesheet mit Hash im
+ * Namen (`npm run assets`, im Docker-Image der Build-Stage) — es gibt keinen CSS-Watcher im
+ * Kundencontainer und keinen Aufruf an einen fremden Server.
+ *
+ * Hier stehen **alle** Theme-Werte: Farben (hell und dunkel) und Schriften. Wer eine Farbe
+ * ändert, ändert sie nur hier; `test/kontrast.test.ts` liest sie von dieser Stelle und misst
+ * jedes verwendete Paar gegen WCAG AA.
+ *
+ * Design-Sprache: Stefans Prototyp (Claude Design, `.cowork/prototyp`). Abweichungen davon sind
+ * Kontrast-Korrekturen und stehen an den Werten:
+ *   hell   ink-3  #9aa1af → #667085   (2,6 : 1 auf Weiß verfehlte AA für kleinen Text)
+ *          ok     #1c8a4b → #187a41   (3,9 : 1 auf ok-soft)
+ *          warn   #a8620a → #9a5808   (4,25 : 1 auf warn-soft)
+ *   dunkel ink-3  #767c8a → #8a90a0   (3,9 : 1 auf surface)
+ */
+
+/* `source(none)`: Tailwind sucht Klassen nur dort, wo `@source` es sagt — nicht in src/, test/ oder README. */
+@import "tailwindcss" source(none);
+@source "../../views";
+
+/*
+ * Schriften: IBM Plex (SIL Open Font License 1.1), selbst ausgeliefert. Die Dateien liegen als
+ * Dev-Pakete `@fontsource-*` im Projekt; der Build kopiert sie mit Hash in die Auslieferung und
+ * schreibt die Adressen unten um. Nur das Subset „latin" (Umlaute, ß, Anführungszeichen, Striche).
+ */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url("../../node_modules/@fontsource-variable/ibm-plex-sans/files/ibm-plex-sans-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Farben: je Name EIN Wert, `light-dark(hell, dunkel)` (COPI-43). Welcher gilt, entscheidet `color-scheme` (unten in
+ * `@layer base`): ohne Wahl folgt die Seite dem Gerät, mit dem Schalter „Dark Mode" setzt der Server `data-theme` auf
+ * `<html>` (Cookie, kein Skript). So stehen die Werte an einer Stelle, auch mit Schalter.
+ */
+@theme static {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Flächen und Linien */
+  --color-page: light-dark(#f4f7fa, #0b1424);
+  --color-surface: light-dark(#ffffff, #121d31);
+  --color-line: light-dark(#d2dbe2, #22304a);
+  /* Rand von Eingabefeldern: mindestens 3 : 1 gegen die Fläche (WCAG 1.4.11), anders als die Kartenlinie. */
+  --color-field-line: light-dark(#7a8794, #64748f);
+
+  /* Text */
+  --color-ink: light-dark(#191d21, #e8ecf3);
+  --color-ink-2: light-dark(#4a5868, #a3aec0);
+  --color-ink-3: light-dark(#63717f, #7d8aa0);
+
+  /* Akzent, Primärknopf, Fokus. Der Primärknopf ist in beiden Modi Orange mit Navy-Schrift (COPI-214; Weiß auf Orange hielte nur 2,8 : 1). */
+  --color-accent: light-dark(#c2470a, #ff8a4c);
+  --color-accent-soft: light-dark(#fff1e8, #2a1f22);
+  /* Rand des Übernahme-Bands (COPI-85): ein Mischton zwischen weicher Fläche und Akzent, wie `danger-rand`/`warn-rand`. */
+  --color-accent-rand: light-dark(#fccdac, #7a3a14);
+  --color-primary: #ff6d20;
+  --color-on-primary: #000b20;
+  --color-focus: light-dark(#ed651e, #ff8a4c);
+
+  /* Seitenleiste (COPI-214, „Navy-Rahmen"): in beiden Modi gleich. */
+  --color-side: #000b20;
+  --color-side-ink: #c9d3e3;
+  --color-side-ink-2: #8796ad;
+  --color-side-act: #12203a;
+  --color-side-act-ink: #ffb07a;
+  --color-side-mark: #ff6d20;
+
+  /* Zustände */
+  --color-ok: light-dark(#187a41, #3ed18c);
+  --color-ok-soft: light-dark(#e7f5ec, #123424);
+  --color-warn: light-dark(#8a6d00, #f2c94c);
+  --color-warn-soft: light-dark(#fdf5d6, #2e2a10);
+  --color-danger: light-dark(#c22a2a, #f17272);
+  --color-danger-soft: light-dark(#fbe8e8, #3b1616);
+
+  /*
+   * Dashboard der Übersicht (COPI-81): Mischtöne für die Hervorhebung roter und gelber Karten (ein Hauch als Grund,
+   * ein Rand zwischen Fläche und Zustandsfarbe) und die Segmente der Stundenbänder und des Wochendiagramms. Die
+   * Bandfarben halten 3 : 1 gegen jede Fläche, auf der sie stehen (WCAG 1.4.11, `test/kontrast.test.ts`).
+   */
+  --color-danger-hauch: light-dark(#fef6f6, #241a1d);
+  --color-danger-rand: light-dark(#eeb4b4, #6e2a2a);
+  --color-warn-hauch: light-dark(#fffbea, #22200f);
+  --color-warn-rand: light-dark(#e6cf73, #6b5a1c);
+  --color-band-ok: light-dark(#2a9456, #34b87a);
+  --color-band-warn: light-dark(#aa8700, #e8be2e);
+  --color-band-danger: light-dark(#d9534f, #f17272);
+}
+
+/*
+ * „Dunkel" als Variante (`dunkel:hidden`): dunkel ist die Seite, wenn der Schalter es sagt, oder ohne Wahl, wenn das
+ * Gerät es sagt. Genau die Regel von `color-scheme` unten — für Teile, die im Dunkeln anders aussehen oder anders
+ * heißen („Light Mode" statt „Dark Mode").
+ */
+@custom-variant dunkel {
+  &:where([data-theme="dunkel"], [data-theme="dunkel"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="hell"]), :root:not([data-theme="hell"]) *) {
+      @slot;
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* Steuerelemente des Browsers (Auswahlfelder, Scrollleisten) und `light-dark()` folgen dem Modus. */
+    color-scheme: light dark;
+  }
+
+  /* Die Wahl des Schalters (COPI-43) geht dem Gerät vor. */
+  :root[data-theme="hell"] {
+    color-scheme: light;
+  }
+
+  :root[data-theme="dunkel"] {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply min-h-dvh bg-page font-sans text-ink antialiased;
+  }
+
+  /* Sichtbarer Fokus für jedes bedienbare Element (WCAG 2.4.7), nicht nur für die Tastatur-Fälle, die der Browser rät. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  h1 {
+    @apply text-2xl font-bold tracking-tight text-ink;
+  }
+
+  h2 {
+    @apply text-xs font-bold uppercase tracking-wider text-ink-2;
+  }
+
+  p {
+    @apply text-sm/6 text-ink-2;
+  }
+
+  a {
+    @apply font-semibold text-accent underline underline-offset-2;
+  }
+
+  code {
+    @apply font-mono text-sm;
+  }
+}
+
+@layer components {
+  /* Die Karte um den Seiteninhalt (`<main>` im Layout). */
+  .karte {
+    @apply mx-auto grid w-full max-w-md gap-5 rounded-2xl border border-line bg-surface p-5 sm:p-8;
+  }
+
+  /* Ein Abschnitt in der Karte, durch eine Linie vom vorigen getrennt. */
+  .abschnitt {
+    @apply grid gap-4 border-t border-line pt-5;
+  }
+
+  .formular {
+    @apply grid gap-4;
+  }
+
+  .feld {
+    @apply grid gap-1.5;
+  }
+
+  .feld label {
+    @apply text-xs font-semibold text-ink-2;
+  }
+
+  .feld .hilfe {
+    @apply text-xs text-ink-3;
+  }
+
+  /* 16 px auf dem Telefon, sonst zoomt iOS beim Fokus in das Feld hinein. */
+  .eingabe {
+    @apply block w-full rounded-[9px] border border-field-line bg-surface px-3 py-2.5 text-base text-ink sm:text-sm;
+  }
+
+  .eingabe[readonly] {
+    @apply bg-page;
+  }
+
+  .knopf {
+    @apply inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[10px] px-4.5 py-2.5 text-sm font-semibold no-underline sm:w-auto;
+  }
+
+  .knopf-primaer {
+    @apply bg-primary text-on-primary hover:brightness-110;
+  }
+
+  .knopf-sekundaer {
+    @apply border border-field-line bg-surface text-ink hover:bg-page;
+  }
+
+  /* Eine Aktion, die etwas zurücknimmt (COPI-90: „Freigabe zurückziehen"): Rahmen wie sekundär, Schrift in Gefahrfarbe. */
+  .knopf-gefahr {
+    @apply text-danger;
+  }
+
+  /* Wie im Prototyp „Update beantragen": Akzent als Rahmen und Schrift, nicht als Fläche. */
+  .knopf-akzent {
+    @apply border border-accent bg-surface text-accent hover:bg-accent-soft;
+  }
+
+  /* Knöpfe nebeneinander (ab `sm`), mobil untereinander in voller Breite. */
+  .knopf-reihe {
+    @apply flex flex-col gap-3 sm:flex-row;
+  }
+
+  .hinweis {
+    @apply flex items-start gap-3 rounded-2xl p-4 text-sm/6;
+  }
+
+  .hinweis p {
+    @apply text-ink;
+  }
+
+  .hinweis-fehler {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .hinweis-info {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .hinweis-ok {
+    @apply bg-ok-soft text-ok;
+  }
+
+  /* Die Fehlermeldung, die das Browser-Skript (Passkey) in ein vorhandenes Element schreibt: wie eine Hinweisbox, aber ohne Symbol. */
+  .meldung {
+    @apply rounded-2xl bg-danger-soft p-4 text-sm/6 text-ink;
+  }
+
+  .hinweis-symbol {
+    @apply size-5 shrink-0;
+  }
+
+  /* Das QR-SVG bringt seinen weißen Grund und die Ruhezone selbst mit (Scanner brauchen dunkel auf hell, auch im Dunkelmodus). */
+  .qr {
+    @apply mx-auto w-full max-w-64 overflow-hidden rounded-xl;
+  }
+
+  .qr svg {
+    @apply block h-auto w-full;
+  }
+
+  .codes {
+    @apply grid grid-cols-2 gap-2;
+  }
+
+  .codes li {
+    @apply rounded-lg border border-line bg-page px-3 py-2 text-center;
+  }
+
+  /*
+   * Die Übersicht (COPI-37): kein Kartenrahmen um die ganze Seite, sondern Abschnitte, die selbst Karten
+   * sind (wie im Prototyp). Zustände stehen nie allein als Farbe: neben jedem Punkt steht ein Wort.
+   */
+
+  /*
+   * Maße aus dem Prototyp (COPI-43): Statuskarte 20 px Innenabstand, Symbol 40 px, Satz 15 px, Text 13 px, darunter bei
+   * Rot und Gelb „Jetzt ansehen". Kacheln 14 px Innenabstand, Punkt 7 px, Name 13 px, Zeile darunter 11 px.
+   */
+  .status {
+    @apply flex items-start gap-4 rounded-2xl p-5;
+  }
+
+  .status-symbol {
+    @apply grid size-10 shrink-0 place-items-center rounded-[10px] bg-surface;
+  }
+
+  .status-satz {
+    @apply text-[15px]/5 font-bold text-ink;
+  }
+
+  .status-detail {
+    @apply mt-[3px] text-[13px]/5 text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .status-aktion {
+    @apply mt-3 inline-block rounded-[9px] px-3.5 py-2 text-[13px] font-semibold text-surface no-underline hover:brightness-110;
+  }
+
+  .status-aktion-gelb {
+    @apply bg-warn;
+  }
+
+  .status-aktion-rot {
+    @apply bg-danger;
+  }
+
+  .status-rot {
+    @apply bg-danger-soft;
+  }
+
+  .status-rot .status-symbol {
+    @apply text-danger;
+  }
+
+  .status-gelb {
+    @apply bg-warn-soft;
+  }
+
+  .status-gelb .status-symbol {
+    @apply text-warn;
+  }
+
+  .status-gruen {
+    @apply bg-ok-soft;
+  }
+
+  .status-gruen .status-symbol {
+    @apply text-ok;
+  }
+
+  .status-leer {
+    @apply border border-line bg-surface;
+  }
+
+  .status-leer .status-symbol {
+    @apply bg-page text-ink-2;
+  }
+
+  .kacheln {
+    @apply grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3;
+  }
+
+  /* Die Betreuersicht trägt Rohbefunde: breitere Kacheln. */
+  .kacheln-betreuer {
+    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-2;
+  }
+
+  .kachel {
+    @apply grid content-start gap-[5px] rounded-xl border border-line bg-surface p-3.5;
+  }
+
+  .kachel-kopf {
+    @apply flex items-center gap-[7px];
+  }
+
+  .punkt {
+    @apply size-[7px] shrink-0 rounded-full;
+  }
+
+  .punkt-gruen {
+    @apply bg-ok;
+  }
+
+  .punkt-gelb {
+    @apply bg-warn;
+  }
+
+  .punkt-rot {
+    @apply bg-danger;
+  }
+
+  /* Ein Modul-Status außerhalb von gruen/gelb/rot (COPI-78, ein Fehler in der Fach-View): neutral statt geraten. */
+  .punkt-unbekannt {
+    @apply bg-ink-3;
+  }
+
+  .kachel-name {
+    @apply min-w-0 flex-1 text-[13px] font-semibold text-ink [overflow-wrap:anywhere];
+  }
+
+  .kachel-wort {
+    @apply shrink-0 text-[11px] font-semibold;
+  }
+
+  .kachel-wort-gruen {
+    @apply text-ok;
+  }
+
+  .kachel-wort-gelb {
+    @apply text-warn;
+  }
+
+  .kachel-wort-rot {
+    @apply text-danger;
+  }
+
+  .kachel-kennung,
+  .agent-technik {
+    @apply flex flex-wrap items-center gap-1.5 text-[11px] text-ink-3;
+  }
+
+  .kachel-kennung code,
+  .agent-technik code {
+    @apply text-[11px];
+  }
+
+  .marke {
+    @apply rounded-full border border-line px-2 py-0.5 text-[11px] font-semibold text-ink-2;
+  }
+
+  /* Zeilenumbrüche im Text bleiben, lange Wörter und Adressen brechen um. */
+  .kachel-text {
+    @apply text-[13px]/5 whitespace-pre-line text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .kachel-kunde {
+    @apply text-xs/5 text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .kachel-kunde-label {
+    @apply font-semibold text-ink;
+  }
+
+  .kachel-zeit {
+    @apply text-[11px]/4 text-ink-3;
+  }
+
+  /*
+   * Die Übersicht (COPI-43): ab xl zwei Spalten wie im Prototyp — links Statuskarte und Kacheln, rechts „Letzte
+   * Meldungen" (320 px); darunter alles untereinander.
+   */
+  .uebersicht {
+    @apply grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start xl:gap-7;
+  }
+
+  .uebersicht-haupt {
+    @apply grid min-w-0 content-start gap-6;
+  }
+
+  .abschnitt-zeile {
+    @apply flex items-baseline justify-between gap-3;
+  }
+
+  .abschnitt-link {
+    @apply text-xs font-semibold text-accent no-underline hover:underline;
+  }
+
+  .letzte {
+    @apply overflow-hidden rounded-[14px] border border-line bg-surface;
+  }
+
+  .letzte-zeile {
+    @apply flex gap-[11px] px-3.5 py-[13px];
+  }
+
+  .letzte-zeile + .letzte-zeile {
+    @apply border-t border-line;
+  }
+
+  .letzte-punkt {
+    @apply mt-[5px] size-2;
+  }
+
+  .letzte-titel {
+    @apply text-[13px]/5 font-medium text-ink [overflow-wrap:anywhere];
+  }
+
+  /* Eigene Zeilenhöhe: die globale für <p> (24 px) risse zwischen Titel und Zeit eine Lücke. */
+  .letzte-zeit {
+    @apply mt-0.5 text-[11px]/4 text-ink-3;
+  }
+
+  .kachel-zeit-warn {
+    @apply text-warn;
+  }
+
+  /*
+   * Das Dashboard der Übersicht (COPI-81, neu geordnet mit COPI-122 nach dem freigegebenen Entwurf): oben die Statuszeile,
+   * dann vier Kennzahlen (mobil 2 × 2), die Reihe „Zu tun", je Modul ein aufklappbarer Bereich (Kartenraster 1 / 2 ab md
+   * / 3 ab lg / 4 ab xl, grüne Karten als Chips), eine Reihe aus drei gleich breiten Spalten (Kennzahlen-Karte, Woche,
+   * „Letzte Meldungen"), die Team-Reihe (je ½) und die Wachen. Bänder und Diagramm sind Inline-SVG: Größe per Klasse,
+   * Farbe per `fill`-Klasse.
+   */
+  /* Eine Spalte, die nie breiter als der Inhalt wird: Zeilen mit `truncate` dürften das Raster sonst aufdehnen. */
+  .dashboard {
+    @apply grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-6;
+  }
+
+  /* Die Statuszeile (COPI-122): eine Zeile, aufklappbar; „Jetzt ansehen" daneben (mobil darunter, volle Breite). */
+  .statuszeile {
+    @apply flex flex-wrap items-start gap-3 rounded-[14px] border-[1.5px] border-line bg-surface py-2.5 pr-3 pl-3.5 lg:flex-nowrap;
+  }
+
+  .statuszeile-rot {
+    @apply border-danger-rand bg-danger-hauch;
+  }
+
+  .statuszeile-gelb {
+    @apply border-warn-rand bg-warn-hauch;
+  }
+
+  .statuszeile-gruen {
+    @apply border-ok-soft;
+  }
+
+  .statuszeile-details {
+    @apply min-w-0 flex-1;
+  }
+
+  .statuszeile-kopf {
+    @apply flex min-h-8 min-w-0 cursor-pointer list-none items-center gap-2.5;
+  }
+
+  .statuszeile-kopf::-webkit-details-marker {
+    @apply hidden;
+  }
+
+  .statuszeile-symbol {
+    @apply grid size-6 flex-none place-items-center rounded-full bg-ink-3 text-surface;
+  }
+
+  .statuszeile-symbol .symbol {
+    @apply size-4;
+  }
+
+  .statuszeile-rot .statuszeile-symbol {
+    @apply bg-danger;
+  }
+
+  .statuszeile-gelb .statuszeile-symbol {
+    @apply bg-warn;
+  }
+
+  .statuszeile-gruen .statuszeile-symbol {
+    @apply bg-ok;
+  }
+
+  .statuszeile-satz {
+    @apply text-sm font-semibold whitespace-nowrap text-ink;
+  }
+
+  /* Mobil nur der Satz: die Kurzfassung stünde abgeschnitten da, die Punkte zeigt das Aufklappen. */
+  .statuszeile-kurz {
+    @apply hidden min-w-0 flex-1 truncate text-[13px] text-ink-2 lg:block;
+  }
+
+  .statuszeile-liste {
+    @apply mt-2 mb-1 ml-[34px] grid gap-1.5 text-[13px];
+  }
+
+  .statuszeile-liste li {
+    @apply flex items-baseline gap-2;
+  }
+
+  .statuszeile-punkt {
+    @apply font-normal text-ink no-underline hover:underline;
+  }
+
+  .statuszeile-titel {
+    @apply font-semibold;
+  }
+
+  .statuszeile-leer {
+    @apply mt-2 mb-1 ml-[34px] text-[13px] text-ink-2;
+  }
+
+  .statuszeile-aktion {
+    @apply m-0 w-full flex-none py-2.5 text-center text-sm lg:w-auto lg:py-1.5 lg:text-[13px];
+  }
+
+  /* „Details" mit Winkel, gedreht, wenn offen (Statuszeile und Bereiche). */
+  .aufklapp-pfeil {
+    @apply flex flex-none items-center gap-1 text-xs text-ink-3 after:size-[7px] after:translate-y-[-2px] after:rotate-45 after:border-r-[1.5px] after:border-b-[1.5px] after:border-current after:transition-transform after:content-[''];
+  }
+
+  details[open] > summary .aufklapp-pfeil {
+    @apply after:translate-y-[1px] after:-rotate-135;
+  }
+
+  .aufklapp-rechts {
+    @apply ml-auto;
+  }
+
+  /* Die Reihe „Zu tun" (COPI-122) und die Team-Listen: gleich breite Spalten ab lg, mobil untereinander. */
+  .zu-tun {
+    @apply grid gap-6 lg:auto-cols-fr lg:grid-flow-col;
+  }
+
+  .team-reihe {
+    @apply grid gap-6 lg:grid-cols-2;
+  }
+
+  .aufgaben {
+    @apply grid min-w-0 content-start overflow-hidden rounded-[14px] border border-line bg-surface;
+  }
+
+  .aufgaben-kopf {
+    @apply flex items-center gap-2 border-b border-line px-3.5 py-3;
+  }
+
+  .aufgaben-kopf .symbol {
+    @apply size-[18px] text-ink-2;
+  }
+
+  .aufgaben-zahl {
+    @apply ml-auto rounded-full bg-primary px-2 py-px text-xs font-semibold whitespace-nowrap text-on-primary;
+  }
+
+  .aufgaben-liste li {
+    @apply border-b border-line last:border-b-0;
+  }
+
+  .aufgaben-zeile {
+    @apply grid gap-0.5 px-3.5 py-2.5 font-normal text-ink no-underline hover:bg-page;
+  }
+
+  .aufgaben-zeile-kopf {
+    @apply flex min-w-0 items-baseline gap-2;
+  }
+
+  .aufgaben-neu {
+    @apply size-[7px] flex-none self-center rounded-full bg-accent;
+  }
+
+  .aufgaben-titel {
+    @apply min-w-0 flex-1 truncate text-[13.5px] font-semibold;
+  }
+
+  .aufgaben-titel-umbruch {
+    @apply whitespace-normal;
+  }
+
+  .aufgaben-zeit {
+    @apply text-xs whitespace-nowrap text-ink-3;
+  }
+
+  .aufgaben-meta {
+    @apply truncate text-[12.5px] text-ink-2;
+  }
+
+  .aufgaben-leer {
+    @apply px-3.5 py-4 text-[13px] text-ink-3;
+  }
+
+  .aufgaben-fuss {
+    @apply border-t border-line px-3.5 py-2.5 text-[13px];
+  }
+
+  /* Ein aufklappbarer Bereich (COPI-122): Kopf mit Titel, Zusammenfassung und „Alle ansehen"; grüne Karten als Chips. */
+  .klappbereich {
+    @apply border-t border-line pt-3.5;
+  }
+
+  .klappbereich-kopf {
+    @apply flex cursor-pointer list-none flex-wrap items-center gap-2.5;
+  }
+
+  .klappbereich-kopf::-webkit-details-marker {
+    @apply hidden;
+  }
+
+  .klappbereich-info {
+    @apply flex flex-wrap items-center gap-2 text-[13px] text-ink-2;
+  }
+
+  .klappbereich-link {
+    @apply ml-auto;
+  }
+
+  .klappbereich-inhalt {
+    @apply mt-3 grid gap-3;
+  }
+
+  .klappbereich-gruen {
+    @apply flex flex-wrap items-center gap-2 text-[13px] text-ink-2;
+  }
+
+  .dienst-chips {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .dienst-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[13px] font-normal text-ink no-underline hover:border-field-line;
+  }
+
+  /* Drei gleich breite Spalten ab lg: Kennzahlen-Karte, Woche, „Letzte Meldungen" (COPI-122). */
+  .dashboard-reihe {
+    @apply grid min-w-0 gap-6 lg:grid-cols-3 lg:items-stretch;
+  }
+
+  .dashboard-reihe .kennzahl-karten {
+    @apply grid-cols-1;
+  }
+
+  .dashboard-reihe .woche {
+    @apply lg:col-span-1;
+  }
+
+  .kennzahlen {
+    @apply grid grid-cols-2 gap-3 lg:grid-cols-4;
+  }
+
+  .kennzahl {
+    @apply grid min-w-0 content-start gap-1 rounded-[14px] border border-line bg-surface p-4;
+  }
+
+  .kennzahl-label {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-ink-2;
+  }
+
+  .kennzahl-wert {
+    @apply text-[22px]/tight font-bold text-ink lg:text-[28px]/tight;
+  }
+
+  .kennzahl-wert-rot {
+    @apply text-danger;
+  }
+
+  .kennzahl-zusatz {
+    @apply text-xs text-ink-3;
+  }
+
+  /* Ab xl vier Karten je Reihe (COPI-83, freigegebener Entwurf mit Messwerten). */
+  .dienste {
+    @apply grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  /* Die ganze Karte ist ein Link: ohne Unterstreichung und Linkfarbe, der Fokus bleibt sichtbar (`:focus-visible` oben). */
+  .dienst {
+    @apply grid h-full content-start gap-2.5 rounded-[14px] border border-line bg-surface p-4 font-normal text-ink no-underline hover:border-field-line;
+  }
+
+  .dienst-rot {
+    @apply border-[1.5px] border-danger-rand bg-danger-hauch;
+  }
+
+  .dienst-gelb {
+    @apply border-[1.5px] border-warn-rand bg-warn-hauch;
+  }
+
+  .dienst-kopf {
+    @apply flex items-center gap-2.5;
+  }
+
+  .dienst-kuerzel {
+    @apply grid size-8 shrink-0 place-items-center rounded-lg text-xs font-bold;
+  }
+
+  .dienst-kuerzel-rot {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .dienst-kuerzel-gelb {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .dienst-kuerzel-gruen {
+    @apply bg-ok-soft text-ok;
+  }
+
+  /* Ein Status außerhalb von gruen/gelb/rot (COPI-82, ein Fehler in der Fach-View): neutral statt geraten. */
+  .dienst-kuerzel-unbekannt {
+    @apply bg-page text-ink-2;
+  }
+
+  /* Die größere Kachel der Modulseite (COPI-82): 40 statt 32 px. */
+  .dienst-kuerzel-gross {
+    @apply size-10;
+  }
+
+  .dienst-titel {
+    @apply min-w-0 flex-1 text-sm font-semibold text-ink [overflow-wrap:anywhere];
+  }
+
+  .dienst-text {
+    @apply text-[13px]/5 text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .dienst-band {
+    @apply grid gap-1;
+  }
+
+  .dienst-zeit {
+    @apply text-xs text-ink-2;
+  }
+
+  /* Status als Pille: Punkt und Wort auf getöntem Grund (WCAG 1.4.1, das Wort trägt die Bedeutung). */
+  .pille {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold;
+  }
+
+  .pille-rot {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .pille-gelb {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .pille-gruen {
+    @apply bg-ok-soft text-ok;
+  }
+
+  .pille-unbekannt {
+    @apply bg-page text-ink-2;
+  }
+
+  /*
+   * Übernahme-Sperre (COPI-85), Entwurf „Übernahme": die Marke „übernommen · Stefan" (Liste, Kachel, Dashboard-Karte),
+   * der Knopf „Übernehmen" mit Hinweis und das Band einer übernommenen Zeile auf der Detailseite — alles in der
+   * Akzentfarbe, nicht in einer Zustandsfarbe: eine Übernahme ist kein Fehler und kein Hinweis auf eine Störung.
+   */
+  /* Eine Marke aus der View (COPI-91), etwa „Grenzfall": neutrale Pille neben der Zeit. */
+  .zeilen-marke {
+    @apply inline-flex items-center rounded-full bg-page px-2 py-px text-[11px] font-bold text-ink-2;
+  }
+
+  /* Die geltende Entscheidung einer Listenzeile (COPI-91): Pille in der Akzentfarbe, „Interessant · Stefan". */
+  .entscheidung-marke {
+    @apply inline-flex items-center rounded-full bg-accent-soft px-2 py-px text-[11px] font-bold text-accent;
+  }
+
+  /* Ein Link nach außen (COPI-91): Host mit kleinem Pfeil-Symbol. */
+  .extern-link {
+    @apply inline-flex items-center gap-1;
+  }
+
+  .extern-link .symbol {
+    @apply size-3.5 shrink-0;
+  }
+
+  .sperr-marke {
+    @apply inline-flex w-fit items-center gap-1 justify-self-start rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-accent;
+  }
+
+  .sperr-marke .symbol {
+    @apply size-3 shrink-0 stroke-[2.4];
+  }
+
+  /* Zeit und Marke unter dem Titel einer Listenzeile; die Marke rutscht bei Platzmangel darunter. */
+  .liste-meta-zeile {
+    @apply flex flex-wrap items-center gap-x-2 gap-y-1;
+  }
+
+  .knopf-mit-symbol {
+    @apply gap-2;
+  }
+
+  .knopf-mit-symbol .symbol {
+    @apply size-4 shrink-0 stroke-[2.2];
+  }
+
+  /* Mobil: Knopf in voller Breite, darunter der Hinweis. Am Desktop steht der Knopf rechts neben dem Hinweis. */
+  .vorgang-uebernahme {
+    @apply mb-4 grid gap-2.5 lg:flex lg:flex-row-reverse lg:items-start lg:gap-4;
+  }
+
+  .vorgang-uebernahme-form {
+    @apply grid shrink-0;
+  }
+
+  .vorgang-uebernahme-hinweis {
+    @apply text-[12.5px]/5 text-ink-2 lg:flex-1 lg:rounded-[10px] lg:bg-page lg:px-3.5 lg:py-3 lg:text-[13px]/5;
+  }
+
+  /* Das Band einer übernommenen Zeile: Schloss, zwei Zeilen Text, rechts (mobil darunter) „Zurückgeben". */
+  /*
+   * Die Entwurfskarte (COPI-90, freigegebener Entwurf): oben auf der Detailseite, mit Akzentrahmen, solange sie auf eine
+   * Freigabe wartet. Kopf mit Fassung und Marke, Empfänger und Betreff auf grauem Grund, der Text mit Zeilenumbrüchen,
+   * unten je Zustand Knöpfe oder ein Band (Rückfrage getönt in Akzent, Freigegeben/Gesendet in Grün).
+   */
+  .freigabe-karte {
+    @apply mb-4 overflow-hidden rounded-xl border border-line bg-surface;
+  }
+
+  .freigabe-karte-offen {
+    @apply border-accent;
+  }
+
+  .freigabe-kopf {
+    @apply flex items-center justify-between gap-2.5 border-b border-line px-4 py-[13px];
+  }
+
+  .freigabe-kopf-links {
+    @apply flex items-center gap-2.5;
+  }
+
+  .freigabe-kopf-links > .symbol {
+    @apply size-[18px] shrink-0 text-accent;
+  }
+
+  .freigabe-kopf-links > span {
+    @apply grid gap-px;
+  }
+
+  .freigabe-titel {
+    @apply text-sm font-bold text-ink;
+  }
+
+  .freigabe-fassung {
+    @apply text-[11.5px] text-ink-3;
+  }
+
+  .freigabe-marke {
+    @apply shrink-0 rounded-full bg-page px-2.5 py-[3px] text-[11.5px] font-bold whitespace-nowrap text-ink-2;
+  }
+
+  .freigabe-marke-warten {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .freigabe-marke-ok {
+    @apply bg-ok-soft text-ok;
+  }
+
+  .freigabe-veraltet {
+    @apply flex gap-2.5 border-b border-line bg-warn-soft px-4 py-3 text-[12.5px] text-ink;
+  }
+
+  .freigabe-veraltet .symbol {
+    @apply size-[17px] shrink-0 text-warn;
+  }
+
+  .freigabe-meta {
+    @apply grid gap-1 border-b border-line bg-page px-4 py-3 text-[12.5px];
+  }
+
+  .freigabe-meta div {
+    @apply flex gap-1.5;
+  }
+
+  .freigabe-meta dt {
+    @apply text-ink-3;
+  }
+
+  .freigabe-meta dd {
+    @apply font-semibold text-ink [overflow-wrap:anywhere];
+  }
+
+  .freigabe-text {
+    @apply px-4 py-3.5 text-[13.5px] leading-[1.55] whitespace-pre-wrap text-ink [overflow-wrap:anywhere];
+  }
+
+  /* Einfache Formatierung (COPI-125): Absätze, Überschriften, Listen — nur Abstände und Gewicht, keine eigenen Farben. */
+  .freigabe-text-einfach {
+    @apply grid gap-2.5 whitespace-normal;
+  }
+
+  .einfach-ueberschrift {
+    @apply mt-2 text-[15px] font-bold tracking-normal text-ink normal-case;
+  }
+
+  .einfach-absatz {
+    @apply whitespace-pre-line;
+  }
+
+  .einfach-liste {
+    @apply grid list-disc gap-1 pl-5;
+  }
+
+  .freigabe-fuss {
+    @apply flex flex-col gap-2.5 border-t border-line px-4 py-3.5 sm:flex-row sm:flex-wrap sm:items-center;
+  }
+
+  .freigabe-fuss form {
+    @apply contents;
+  }
+
+  .freigabe-hinweis {
+    @apply text-xs text-ink-3 sm:basis-full;
+  }
+
+  .freigabe-band {
+    @apply flex flex-col gap-3 border-t border-line px-4 py-3.5 text-[13px] text-ink sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .freigabe-band .symbol {
+    @apply mt-0.5 size-[18px] shrink-0;
+  }
+
+  .freigabe-band > p,
+  p.freigabe-band {
+    @apply flex gap-2.5;
+  }
+
+  .freigabe-band span span {
+    @apply text-ink-2;
+  }
+
+  .freigabe-band-frage {
+    @apply flex-col items-stretch bg-accent-soft sm:flex-col sm:items-stretch;
+  }
+
+  .freigabe-band-frage p {
+    @apply block;
+  }
+
+  .freigabe-band-frage p span {
+    @apply mt-0.5 block text-ink-2;
+  }
+
+  .freigabe-knoepfe {
+    @apply flex flex-col gap-2.5 sm:flex-row;
+  }
+
+  .freigabe-band-ok {
+    @apply bg-ok-soft;
+  }
+
+  .freigabe-band-ok > p > .symbol,
+  p.freigabe-band-ok > .symbol {
+    @apply text-ok;
+  }
+
+  .vorgang-band {
+    @apply mb-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border-[1.5px] border-accent-rand bg-accent-soft p-3.5 sm:flex sm:gap-3.5 sm:px-4;
+  }
+
+  .vorgang-band-symbol {
+    @apply grid size-9 shrink-0 place-items-center rounded-full bg-primary text-on-primary;
+  }
+
+  .vorgang-band-symbol .symbol {
+    @apply size-[18px] stroke-[2.2];
+  }
+
+  .vorgang-band-text {
+    @apply grid min-w-0 gap-0.5 sm:flex-1;
+  }
+
+  .vorgang-band-titel {
+    @apply text-sm font-bold text-accent [overflow-wrap:anywhere];
+  }
+
+  .vorgang-band-detail {
+    @apply text-[13px]/5 text-ink;
+  }
+
+  .vorgang-band-form {
+    @apply col-span-2 grid shrink-0 sm:col-span-1;
+  }
+
+  .band {
+    @apply block w-full;
+  }
+
+  .band-karte {
+    @apply h-2.5 lg:h-4;
+  }
+
+  .band-duenn {
+    @apply mt-1.5 h-1.5;
+  }
+
+  .band-gruen {
+    @apply fill-band-ok;
+  }
+
+  .band-gelb {
+    @apply fill-band-warn;
+  }
+
+  .band-rot {
+    @apply fill-band-danger;
+  }
+
+  .band-leer {
+    @apply fill-line;
+  }
+
+  .band-achse {
+    @apply flex justify-between gap-2 text-[11px]/4 text-ink-3;
+  }
+
+  .woche {
+    @apply grid min-w-0 content-start gap-3 rounded-[14px] border border-line bg-surface p-4 lg:col-span-2;
+  }
+
+  .woche-diagramm {
+    @apply block h-36 w-full lg:h-44;
+  }
+
+  .woche-tage {
+    @apply -mt-1 grid grid-cols-7 text-center text-[11px] text-ink-3;
+  }
+
+  .legende {
+    @apply flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-2;
+  }
+
+  .legende li {
+    @apply flex items-center gap-1.5;
+  }
+
+  .legende-farbe {
+    @apply size-2 rounded-sm;
+  }
+
+  .legende-rot {
+    @apply bg-band-danger;
+  }
+
+  .legende-gelb {
+    @apply bg-band-warn;
+  }
+
+  .legende-gruen {
+    @apply bg-band-ok;
+  }
+
+  /* Leerzustand in der Form der Liste „Letzte Meldungen". */
+  .letzte-leer {
+    @apply px-3.5 py-[13px] text-[13px]/5 text-ink-2;
+  }
+
+  /*
+   * Kacheln der Modulseite (COPI-82, `darstellung: kacheln`): Filter-Chips ohne Skript, dann das Kartenraster.
+   * Kartenrahmen, Kürzel, Pille und Band sind dieselben Bausteine wie das Dashboard (COPI-81, `.dienst*`,
+   * `partials/dienst-kuerzel`, `partials/band`) — hier nur die Karteninhalte, die es dort nicht gibt: die
+   * deklarierten Spalten außer titel/status/aktualisiert_am, den Block „Letzte 7 Tage" und die Fußzeile.
+   */
+  .modul-chips {
+    @apply mb-1.5 flex flex-wrap gap-2;
+  }
+
+  /*
+   * Eigene Chips statt `.chip` (Meldungen, COPI-43): dort füllt sich der aktive Chip in der Akzentfarbe, hier
+   * dunkel (Vorgabe des freigegebenen Entwurfs „Module › Server & Dienste") — zwei unterschiedliche Aussagen,
+   * kein gemeinsamer Baustein.
+   */
+  .modul-chip {
+    @apply flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs font-semibold text-ink-2 no-underline hover:bg-page;
+  }
+
+  .modul-chip-rot {
+    @apply text-danger;
+  }
+
+  .modul-chip-gelb {
+    @apply text-warn;
+  }
+
+  .modul-chip-gruen {
+    @apply text-ok;
+  }
+
+  .modul-chip[aria-current='true'] {
+    @apply border-ink bg-ink text-surface hover:bg-ink;
+  }
+
+  .modul-kacheln {
+    @apply grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 2xl:grid-cols-4;
+  }
+
+  /* Punkt + Wort in der Zustandsfarbe, ohne die getönte Fläche der Pille (COPI-82: unter dem Titel, nicht daneben). */
+  .dienst-status-wort {
+    @apply flex items-center gap-1.5 text-[13px]/5 font-semibold;
+  }
+
+  .dienst-status-wort-rot {
+    @apply text-danger;
+  }
+
+  .dienst-status-wort-gelb {
+    @apply text-warn;
+  }
+
+  .dienst-status-wort-gruen {
+    @apply text-ok;
+  }
+
+  .dienst-status-wort-unbekannt {
+    @apply text-ink-2;
+  }
+
+  .dienst-felder {
+    @apply grid gap-2;
+  }
+
+  .dienst-feld-label {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-ink-3;
+  }
+
+  .dienst-feld-wert {
+    @apply text-[13px]/5 text-ink [overflow-wrap:anywhere];
+  }
+
+  .dienst-band-kopf {
+    @apply flex items-baseline justify-between gap-2;
+  }
+
+  /* Das 7-Tage-Band ist gröber als das 24-Std.-Band des Dashboards (28 statt 24 Segmente): etwas höher. */
+  .band-kachel {
+    @apply h-[22px];
+  }
+
+  .dienst-fuss {
+    @apply mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 text-xs text-ink-2;
+  }
+
+  .dienst-fuss-rot {
+    @apply border-danger-rand;
+  }
+
+  .dienst-fuss-gelb {
+    @apply border-warn-rand;
+  }
+
+  .dienst-fuss-details {
+    @apply font-semibold text-accent;
+  }
+
+  /*
+   * Kennzahlen-Seite (COPI-98, Ansichtstyp `kennzahlen`; freigegebener Entwurf „Kennzahlen-Seite KI-Verbrauch"):
+   * Zeitraum-Chips (`.modul-chip`), Kennzahlen (`.kennzahl*`, wie das Dashboard), Balkendiagramm je Tag,
+   * Aufteilungen mit Anteilsbalken und der Block zur Belastbarkeit. Breiten und Lagen der Balken sind
+   * SVG-Attribute, hier stehen nur Form und Farbe.
+   */
+  .kennzahlen-seite {
+    @apply grid min-w-0 gap-4;
+  }
+
+  .kennzahlen-seite .modul-chips {
+    @apply mb-0;
+  }
+
+  .filter-zeile {
+    @apply flex flex-wrap items-center gap-3;
+  }
+
+  .filter-marke {
+    @apply rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent [overflow-wrap:anywhere];
+  }
+
+  .hinweis-titel {
+    @apply font-semibold;
+  }
+
+  .kennzahl-block {
+    @apply grid min-w-0 content-start gap-3 rounded-[14px] border border-line bg-surface p-4;
+  }
+
+  .kennzahl-block-zusatz {
+    @apply text-xs text-ink-3;
+  }
+
+  .diagramm {
+    @apply flex min-w-0 gap-2;
+  }
+
+  .diagramm-skala {
+    @apply flex h-36 shrink-0 flex-col justify-between text-right text-[11px] text-ink-3 lg:h-44;
+  }
+
+  .diagramm-feld {
+    @apply grid min-w-0 flex-1 gap-1;
+  }
+
+  .diagramm-bild {
+    @apply block h-36 w-full lg:h-44;
+  }
+
+  .diagramm-kurz .diagramm-bild {
+    @apply h-14 lg:h-14;
+  }
+
+  .diagramm-achse {
+    @apply flex justify-between text-[11px] text-ink-3;
+  }
+
+  .diagramm-linie {
+    @apply stroke-line [stroke-dasharray:3_3] [vector-effect:non-scaling-stroke];
+  }
+
+  .diagramm-linie-basis {
+    @apply [stroke-dasharray:none];
+  }
+
+  /* Die Tage in einem helleren Akzent, der letzte Tag voll — dieselbe Farbe trägt die Anteilsbalken. */
+  .diagramm-balken {
+    @apply fill-accent-rand;
+  }
+
+  .diagramm-balken-letzter {
+    @apply fill-accent;
+  }
+
+  .aufteilungen {
+    @apply grid min-w-0 gap-4 lg:grid-cols-3;
+  }
+
+  .aufteilung {
+    @apply grid gap-3;
+  }
+
+  .aufteilung-zeile {
+    @apply grid min-w-0 gap-1.5;
+  }
+
+  .aufteilung-kopf {
+    @apply flex min-w-0 items-baseline gap-2 text-[13px]/5;
+  }
+
+  .aufteilung-name {
+    @apply min-w-0 flex-1 font-semibold text-ink [overflow-wrap:anywhere];
+  }
+
+  a.aufteilung-name {
+    @apply text-accent underline;
+  }
+
+  .aufteilung-name-leer {
+    @apply font-normal text-ink-2;
+  }
+
+  .aufteilung-wert {
+    @apply shrink-0 font-semibold text-ink tabular-nums;
+  }
+
+  .aufteilung-anteil {
+    @apply w-10 shrink-0 text-right text-xs text-ink-3 tabular-nums;
+  }
+
+  .aufteilung-spur {
+    @apply block h-1.5 w-full;
+  }
+
+  .aufteilung-hinweis {
+    @apply text-xs text-ink-3;
+  }
+
+  .anteile {
+    @apply grid gap-3 sm:grid-cols-3;
+  }
+
+  .anteil {
+    @apply grid min-w-0 content-start gap-0.5 rounded-xl bg-page p-3;
+  }
+
+  .anteil-warnung {
+    @apply bg-warn-soft;
+  }
+
+  .anteil-wert {
+    @apply text-xl/tight font-bold text-ink tabular-nums;
+  }
+
+  .anteil-label {
+    @apply text-[13px] font-semibold text-ink;
+  }
+
+  .anteil-text {
+    @apply text-xs text-ink-2;
+  }
+
+  /* Die Karte eines Kennzahlen-Moduls auf der Übersicht: eine Karte, am Desktop nicht über die ganze Breite. */
+  .kennzahl-karten {
+    @apply grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .kennzahl-karte-wert {
+    @apply text-ink;
+  }
+
+  /*
+   * Messwert, Balken und Kurve (COPI-83) auf der Dashboard-Karte und der Modul-Kachel. Alles Inline-SVG ohne
+   * `style`-Attribut: Höhe per Klasse, Farbe per `fill`/`stroke`-Klasse; die Linie bleibt trotz gedehnter `viewBox`
+   * gleich dick (`vector-effect`). Die Zahl trägt bei Gelb/Rot die Zustandsfarbe, sonst `ink`.
+   */
+  .messwert {
+    @apply grid gap-2;
+  }
+
+  .messwert-zeile {
+    @apply flex items-baseline justify-between gap-2;
+  }
+
+  .messwert-wert {
+    @apply text-[30px]/none font-bold;
+  }
+
+  .messwert-wert-gruen {
+    @apply text-ink;
+  }
+
+  .messwert-wert-gelb {
+    @apply text-warn;
+  }
+
+  .messwert-wert-rot {
+    @apply text-danger;
+  }
+
+  .messwert-einheit {
+    @apply text-sm font-semibold text-ink-2;
+  }
+
+  .messwert-bezug {
+    @apply text-xs text-ink-3;
+  }
+
+  .messwert-balken {
+    @apply block h-2 w-full;
+  }
+
+  /* Der aktuelle Wert rechts im Kopf der Kachel, „aktuell" darunter. */
+  .messwert-kopf {
+    @apply grid shrink-0 justify-items-end gap-0.5;
+  }
+
+  .messwert-kachel-wert {
+    @apply text-2xl/none font-bold;
+  }
+
+  .messwert-aktuell {
+    @apply text-[11px] text-ink-3;
+  }
+
+  .kurve {
+    @apply block w-full overflow-visible;
+  }
+
+  .kurve-karte {
+    @apply h-12;
+  }
+
+  .kurve-kachel {
+    @apply h-[90px];
+  }
+
+  /* Die Farbe der Kurve setzt die Zustandsklasse am SVG (`currentColor`): Linie und Punkte voll, Fläche als Tönung. */
+  .kurve-gruen {
+    @apply text-accent;
+  }
+
+  .kurve-gelb {
+    @apply text-band-warn;
+  }
+
+  .kurve-rot {
+    @apply text-band-danger;
+  }
+
+  .kurve-linie {
+    @apply fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round] [vector-effect:non-scaling-stroke];
+  }
+
+  /* Ein einzelner Wert zwischen zwei Lücken: ein Strich der Länge null, die runde Kappe macht ihn zum Punkt. */
+  .kurve-punkt {
+    @apply fill-none stroke-current stroke-[5px] [stroke-linecap:round] [vector-effect:non-scaling-stroke];
+  }
+
+  .kurve-flaeche {
+    @apply fill-current [fill-opacity:0.15];
+  }
+
+  .kurve-warnlinie {
+    @apply stroke-warn stroke-1 [stroke-dasharray:4_4] [vector-effect:non-scaling-stroke];
+  }
+
+  .kurve-tage {
+    @apply grid grid-cols-7 text-center text-[11px] text-ink-3;
+  }
+
+  /* Unter der Kurve bleibt das 7-Tage-Band, nur schmaler (10 statt 22 px). */
+  .band-kachel-schmal {
+    @apply h-2.5;
+  }
+
+  .band-achse-rechts {
+    @apply justify-end;
+  }
+
+  /*
+   * Die Seiten Agenten und Zeitplan (COPI-38): eine Karte je Agent, darin Zeilen „Name — Wert". Wie die Kacheln
+   * der Übersicht: lange Wörter und Adressen brechen um, nichts läuft über den Rand.
+   */
+  .stand-inventar {
+    @apply text-xs text-ink-3;
+  }
+
+  /* Die Karten der Seiten Agenten (COPI-38) und Benutzer (COPI-45): mobil untereinander, ab `sm` zwei Spalten. */
+  .agenten,
+  .konten {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+
+  .agent,
+  .konto {
+    @apply grid content-start gap-3 rounded-2xl border border-line bg-surface p-4;
+  }
+
+  /* Benutzer (COPI-45): Name und Stand in einer Zeile, darunter die Adresse; Adressen brechen um statt überzulaufen. */
+  .seiten-abschnitt {
+    @apply mt-6 grid min-w-0 grid-cols-1 gap-2.5 first-of-type:mt-0;
+  }
+
+  .konto-kopf {
+    @apply flex flex-wrap items-start justify-between gap-2;
+  }
+
+  .konto-adresse {
+    @apply -mt-2 text-[13px]/5 text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .konto-adresse-name {
+    @apply text-sm;
+  }
+
+  /* Die Karte der Seite Agenten ist ein Link (COPI-113): der Name trägt ihn, seine Fläche deckt die ganze Karte. */
+  .agent-verlinkt {
+    @apply relative hover:border-accent-rand;
+  }
+
+  .agent-verlinkt .agent-name {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .agent-link {
+    @apply text-ink no-underline after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-focus;
+  }
+
+  .agent-weiter .symbol {
+    @apply size-[18px] text-ink-3;
+  }
+
+  /*
+   * Die Detailseite eines Agenten (COPI-113, freigegebener Entwurf): Kopf mit Symbol (48 px), Kennzahlen in einer Reihe
+   * (mobil zwei Spalten), Reiter als unterstrichene Links (mobil seitlich wischbar), darunter je Bereich Karten in zwei
+   * Spalten am Desktop.
+   */
+  /* Eine Spalte, die nie breiter wird als der Inhalt: sonst zöge die wischbare Reiterleiste die Seite mobil in die Breite. */
+  .agent-seite {
+    @apply grid min-w-0 grid-cols-1 gap-[18px];
+  }
+
+  .agent-kopf-links {
+    @apply flex min-w-0 items-center gap-3 lg:gap-3.5;
+  }
+
+  .agent-kopf .seiten-krume {
+    @apply hidden lg:block;
+  }
+
+  .agent-kopf h1 {
+    @apply text-xl lg:text-[26px];
+  }
+
+  .agent-initiale {
+    @apply grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-base font-bold text-accent lg:size-12 lg:rounded-[13px] lg:text-[19px];
+  }
+
+  .agent-marken {
+    @apply mt-1.5 flex flex-wrap items-center gap-2 text-xs;
+  }
+
+  .agent-stand {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-ok-soft px-2.5 py-[3px] text-[11.5px] font-semibold text-ok;
+  }
+
+  .agent-stand-entfernt {
+    @apply bg-page text-ink-2;
+  }
+
+  .agent-kennung {
+    @apply font-mono text-xs text-ink-3;
+  }
+
+  .agent-kennzahlen {
+    @apply grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3;
+  }
+
+  .agent-kennzahlen-drei {
+    @apply lg:grid-cols-3;
+  }
+
+  .agent-kennzahl {
+    @apply grid content-start gap-1 rounded-xl border border-line bg-surface px-4 py-3.5;
+  }
+
+  .agent-kennzahl-titel {
+    @apply text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3;
+  }
+
+  .agent-kennzahl-wert {
+    @apply text-2xl font-bold text-ink;
+  }
+
+  .agent-kennzahl-klein {
+    @apply text-lg leading-8;
+  }
+
+  .agent-kennzahl-akzent {
+    @apply text-accent;
+  }
+
+  .agent-kennzahl-fehler {
+    @apply text-danger;
+  }
+
+  .agent-kennzahl-unter {
+    @apply text-xs text-ink-3;
+  }
+
+  .agent-reiter {
+    @apply -mx-5 flex gap-0.5 overflow-x-auto border-b border-line px-5 [scrollbar-width:none] lg:mx-0 lg:px-0;
+  }
+
+  .agent-reiter a {
+    @apply inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap text-ink-2 no-underline hover:text-ink lg:px-3.5 lg:py-[11px];
+  }
+
+  .agent-reiter a[aria-current='page'] {
+    @apply border-accent text-accent;
+  }
+
+  .agent-raster {
+    @apply grid grid-cols-1 items-start gap-4 lg:grid-cols-2;
+  }
+
+  .agent-raster-verbrauch {
+    @apply lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)];
+  }
+
+  .agent-spalte {
+    @apply grid min-w-0 gap-4;
+  }
+
+  .agent-karte {
+    @apply min-w-0 overflow-hidden rounded-xl border border-line bg-surface;
+  }
+
+  .agent-karte-kopf {
+    @apply flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-[13px];
+  }
+
+  .agent-karte-kopf h2 {
+    @apply text-[13px] font-bold tracking-normal text-ink normal-case;
+  }
+
+  .agent-karte-link {
+    @apply text-xs font-semibold text-accent no-underline hover:underline;
+  }
+
+  .agent-karte-leer {
+    @apply px-4 py-4;
+  }
+
+  .agent-werte div {
+    @apply flex justify-between gap-4 border-b border-line px-4 py-2.5 text-[13px] last:border-b-0;
+  }
+
+  .agent-werte dt {
+    @apply text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .agent-werte dd {
+    @apply text-right font-semibold text-ink [overflow-wrap:anywhere];
+  }
+
+  .agent-module a {
+    @apply flex items-center gap-2.5 border-b border-line px-4 py-[11px] text-[13px] font-semibold text-ink no-underline hover:bg-page;
+  }
+
+  .agent-module li:last-child a {
+    @apply border-b-0;
+  }
+
+  .agent-module a > span:first-of-type {
+    @apply flex-1;
+  }
+
+  .agent-module .symbol {
+    @apply size-[17px] text-ink-2;
+  }
+
+  .agent-protokoll li + li {
+    @apply border-t border-line;
+  }
+
+  .agent-ereignis {
+    @apply flex gap-3 px-4 py-3 text-ink no-underline;
+  }
+
+  a.agent-ereignis:hover {
+    @apply bg-page;
+  }
+
+  .agent-ereignis-symbol {
+    @apply grid size-8 shrink-0 place-items-center rounded-[9px] bg-accent-soft text-accent;
+  }
+
+  .agent-ereignis-symbol .symbol {
+    @apply size-4;
+  }
+
+  .agent-ton-warnung,
+  .agent-ton-gelb {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .agent-ton-rot {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .agent-ton-gruen {
+    @apply bg-ok-soft text-ok;
+  }
+
+  .agent-ereignis-text {
+    @apply grid min-w-0 flex-1 grid-cols-1 gap-0.5;
+  }
+
+  .agent-ereignis-kopf {
+    @apply flex items-baseline justify-between gap-2;
+  }
+
+  .agent-ereignis-titel {
+    @apply min-w-0 truncate text-[13px] font-bold;
+  }
+
+  .agent-ereignis-zeit {
+    @apply shrink-0 text-[11.5px] text-ink-3;
+  }
+
+  .agent-ereignis-inhalt {
+    @apply line-clamp-3 text-[12.5px] leading-[1.4] text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .agent-ereignis-typ {
+    @apply text-[11px] font-semibold text-ink-3;
+  }
+
+  .agent-protokoll-karte {
+    @apply max-w-[860px];
+  }
+
+  .agent-chats {
+    @apply grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)];
+  }
+
+  .agent-gespraeche {
+    @apply grid gap-0.5 rounded-xl border border-line bg-surface p-2;
+  }
+
+  .agent-gespraeche a {
+    @apply flex gap-2.5 rounded-[10px] px-3 py-[11px] text-ink no-underline hover:bg-page;
+  }
+
+  .agent-gespraeche a[aria-current='page'] {
+    @apply bg-accent-soft hover:bg-accent-soft;
+  }
+
+  .agent-gespraeche .symbol {
+    @apply size-[18px] shrink-0 text-ink-2;
+  }
+
+  .agent-gespraeche a[aria-current='page'] .symbol {
+    @apply text-accent;
+  }
+
+  .agent-gespraech-text {
+    @apply grid min-w-0 flex-1 grid-cols-1 gap-0.5;
+  }
+
+  .agent-gespraech-name {
+    @apply text-[13px] font-bold;
+  }
+
+  .agent-gespraech-vorschau {
+    @apply truncate text-xs text-ink-3;
+  }
+
+  .agent-verlauf {
+    @apply min-w-0 overflow-hidden rounded-xl border border-line bg-surface;
+  }
+
+  .agent-verlauf-liste {
+    @apply bg-page px-4 py-4 lg:px-[18px];
+  }
+
+  .agent-hinweis {
+    @apply px-4 py-3 text-xs text-ink-3;
+  }
+
+  .agent-postfach {
+    @apply grid gap-2.5;
+  }
+
+  .agent-postfach-kopf {
+    @apply text-[13px] text-ink-2;
+  }
+
+  .agent-postfach-kopf a {
+    @apply font-semibold text-accent no-underline hover:underline;
+  }
+
+  .agent-diagramm {
+    @apply p-4;
+  }
+
+  .agent-name {
+    @apply text-base font-bold normal-case tracking-tight text-ink [overflow-wrap:anywhere];
+  }
+
+  .agent-label {
+    @apply text-xs font-bold uppercase tracking-wider text-ink-2;
+  }
+
+  .agent-leer {
+    @apply text-[13px]/5 text-ink-2;
+  }
+
+  .werte {
+    @apply grid grid-cols-1 gap-1.5 text-[13px]/5;
+  }
+
+  /* Passt der Wert nicht neben das Label, rutscht er darunter, statt das Label auf eine Spalte zu stauchen. */
+  .werte div {
+    @apply flex flex-wrap justify-between gap-x-3 gap-y-0.5;
+  }
+
+  .werte dt {
+    @apply text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .werte dd {
+    @apply ml-auto text-right font-semibold text-ink [overflow-wrap:anywhere];
+  }
+
+  /* Der Punkt vor dem Statuswort in einer Detailseite (COPI-78, Review): `.punkt` ist sonst nur in Flex-Zeilen. */
+  /*
+   * Ein Langtext der Detailseite (COPI-103): Fremdtext mit Zeilenumbrüchen. Mobil eine eigene Karte unter der Wertliste;
+   * am Desktop ist die rechte Spalte schon eine Karte (`.modul-splitt-rechts`) — dort trennt eine Linie statt einer
+   * zweiten Karte in der Karte.
+   */
+  /* Die Bildvorschau (COPI-124): unter der Entscheidungskarte, höchstens 420 px breit, quadratisch zugeschnitten nur wenn nötig. */
+  .bild-vorschau {
+    @apply mt-4 mb-4 grid gap-3 lg:mt-5 lg:mb-5;
+  }
+
+  .bild-vorschau-figur {
+    @apply m-0 grid gap-1.5;
+  }
+
+  .bild-vorschau-bild {
+    @apply block h-auto w-full max-w-[420px] rounded-xl border border-line bg-page;
+  }
+
+  .bild-vorschau-name {
+    @apply text-xs break-all text-ink-3;
+  }
+
+  .langtext {
+    @apply mt-4 rounded-xl border border-line bg-surface px-[18px] py-4 lg:mt-6 lg:rounded-none lg:border-0 lg:border-t lg:bg-transparent lg:px-0 lg:pt-5 lg:pb-0;
+  }
+
+  .langtext-titel {
+    @apply mb-2 text-[11px] font-semibold tracking-[0.06em] text-ink-3 uppercase;
+  }
+
+  .langtext-hinweis {
+    @apply mb-3 flex gap-2 text-[12.5px]/[18px] text-ink-2;
+  }
+
+  .langtext-hinweis .symbol {
+    @apply mt-px size-4 shrink-0 text-ink-3;
+  }
+
+  .langtext-text {
+    @apply text-sm/[22px] whitespace-pre-wrap text-ink [overflow-wrap:anywhere];
+  }
+
+  /* Langtext mit einfacher Formatierung (COPI-131): Blöcke wie beim Entwurf, Schrift wie beim Klartext. */
+  .langtext-einfach {
+    @apply grid gap-2.5 text-sm/[22px] text-ink [overflow-wrap:anywhere];
+  }
+
+  /* Das Basis-`p` ist heller (`text-ink-2`); Absätze sollen aussehen wie die Listenpunkte daneben. */
+  .langtext-einfach .einfach-absatz {
+    @apply text-sm/[22px] text-ink;
+  }
+
+  .langtext-fuss {
+    @apply mt-3 border-t border-line pt-2.5 text-xs text-ink-3;
+  }
+
+  /*
+   * Anhänge (COPI-110, freigegebener Entwurf „Anhänge"): unter dem Mailtext ein Abschnitt wie ein Langtext, darin je
+   * Anhang eine Zeile als Karte. Die Klasse steht in Rahmen, Symbol, Grund und (am Desktop) Marke — nie nur in der Farbe.
+   * Die ganze Zeile ist der Link auf die Warnseite (mindestens 52 px hoch); gesperrt und „liegt im Postfach" sind kein Link.
+   */
+  .anhang-liste {
+    @apply grid gap-2;
+  }
+
+  .anhang {
+    @apply flex min-h-[52px] items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 font-normal text-ink no-underline;
+  }
+
+  a.anhang {
+    @apply hover:bg-page focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus;
+  }
+
+  .anhang-warnung {
+    @apply border-warn-rand bg-warn-hauch;
+  }
+
+  .anhang-gesperrt {
+    @apply border-danger-rand bg-danger-hauch;
+  }
+
+  .anhang-postfach {
+    @apply border-dashed;
+  }
+
+  .anhang-symbol {
+    @apply grid size-9 shrink-0 place-items-center rounded-[10px] bg-page text-ink-2;
+  }
+
+  .anhang-symbol .symbol {
+    @apply size-5;
+  }
+
+  .anhang-symbol-warnung {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .anhang-symbol-gesperrt {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .anhang-text {
+    @apply grid min-w-0 flex-1 gap-0.5;
+  }
+
+  .anhang-name {
+    @apply text-sm font-semibold [overflow-wrap:anywhere];
+  }
+
+  .anhang-gesperrt .anhang-name,
+  .anhang-postfach .anhang-name {
+    @apply text-ink-2;
+  }
+
+  .anhang-meta {
+    @apply text-[12.5px] text-ink-3;
+  }
+
+  .anhang-grund-warnung {
+    @apply font-semibold text-warn;
+  }
+
+  .anhang-grund-gesperrt {
+    @apply font-semibold text-danger;
+  }
+
+  /* Mobil fehlt der Platz: dort trägt der Grund in der zweiten Zeile die Klasse. */
+  .anhang-marke {
+    @apply hidden shrink-0 rounded-full px-2.5 py-[3px] text-[11.5px] font-bold sm:inline;
+  }
+
+  .anhang-marke-warnung {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .anhang-marke-gesperrt {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .anhang-aktion {
+    @apply shrink-0 text-accent;
+  }
+
+  .anhang-aktion .symbol {
+    @apply size-5;
+  }
+
+  /* Die Warnseite vor dem Download: Datei oben, darunter Werte, Warnung und Formular. */
+  .datei-karte {
+    @apply mb-2 flex items-center gap-3;
+  }
+
+  .datei-werte {
+    @apply mb-4;
+  }
+
+  .warn-stark {
+    @apply flex gap-3 rounded-2xl border border-danger-rand bg-danger-soft p-4 text-danger;
+  }
+
+  .warn-stark-symbol .symbol {
+    @apply size-[22px] shrink-0;
+  }
+
+  .warn-stark-titel {
+    @apply mb-1 text-sm font-bold text-ink;
+  }
+
+  .warn-stark-text {
+    @apply text-sm/[22px] text-ink;
+  }
+
+  .warn-form {
+    @apply mt-4 grid gap-4;
+  }
+
+  .warn-bestaetigen {
+    @apply flex items-start gap-2.5 text-sm/[22px] text-ink;
+  }
+
+  .warn-bestaetigen input {
+    @apply mt-px size-5 shrink-0 accent-danger;
+  }
+
+  .werte-status-punkt {
+    @apply mr-1.5 inline-block align-middle;
+  }
+
+  /*
+   * Einstellungen (COPI-39), wie im Prototyp: Titel mit „Ansicht: <Rolle>", Abschnitte mit kleiner Überschrift,
+   * darin je Bereich eine Karte. Digests sind lang: sie werden gekürzt angezeigt, stehen aber vollständig im
+   * Dokument (markieren und kopieren liefert den ganzen Wert).
+   */
+  /*
+   * Kopf jeder angemeldeten Seite (COPI-43), Maße aus dem Prototyp: mobil der Instanzname (12 px, Versalien) über dem
+   * Titel (23 px) und rechts der runde Dark-Mode-Knopf; am Desktop nur der Titel (26 px).
+   */
+  .seiten-kopf {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .seiten-kopf h1 {
+    @apply text-[23px] lg:text-[26px];
+  }
+
+  /* „Version N · eingespielt am …" unter dem Titel einer Modulseite (COPI-84). */
+  .seiten-unterzeile {
+    @apply mt-1 text-xs text-ink-3;
+  }
+
+  /* Der Zurück-Knopf einer Unterseite (COPI-100): rund, 32 px, links neben dem Titel wie im Prototyp; nur mobil. */
+  .seiten-titel-zeile {
+    @apply flex items-center gap-3;
+  }
+
+  .seiten-zurueck {
+    @apply flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink lg:hidden;
+  }
+
+  .seiten-zurueck .symbol {
+    @apply size-4;
+  }
+
+  .seiten-instanz {
+    @apply mb-1 text-xs font-semibold uppercase tracking-[0.06em] text-ink-3 lg:hidden;
+  }
+
+  /* Der Pfad über dem Titel (COPI-82, Kacheln der Modulseite): „Module / Server & Dienste", „Module" ist ein Link. */
+  .seiten-krume {
+    @apply mb-1 text-xs text-ink-3 [overflow-wrap:anywhere];
+  }
+
+  .seiten-krume a {
+    @apply text-ink-3 underline-offset-2 hover:text-ink hover:underline;
+  }
+
+  /* „Stand: heute, 09:50" neben oder unter dem Titel (COPI-82) — die Zeile selbst und ihre beiden Sichtbarkeiten. */
+  .seiten-stand-zeile {
+    @apply text-xs text-ink-3;
+  }
+
+  .seiten-stand-zeile-mobil {
+    @apply mt-1 lg:hidden;
+  }
+
+  .seiten-stand-zeile-desktop {
+    @apply hidden shrink-0 lg:block;
+  }
+
+  .seiten-kopf-rechts {
+    @apply flex shrink-0 items-center gap-2;
+  }
+
+  .ansicht {
+    @apply rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-semibold text-ink-2;
+  }
+
+  /*
+   * `grid-cols-1` ist `minmax(0, 1fr)`: ohne diese Spalte richtet sich ein Grid nach der Mindestbreite seines Inhalts,
+   * ein ungebrochener Digest schöbe Abschnitt und Karte über den Rand, und das Kürzen griffe nie.
+   */
+  .einstellungen-abschnitt {
+    @apply grid min-w-0 grid-cols-1 gap-2.5;
+  }
+
+  .abschnitt-kopf {
+    @apply flex items-center gap-2;
+  }
+
+  .nur-betreuer {
+    @apply rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent;
+  }
+
+  .bereiche {
+    @apply grid gap-3;
+  }
+
+  .bereich {
+    @apply grid min-w-0 grid-cols-1 gap-3 rounded-2xl border border-line bg-surface p-4;
+  }
+
+  /* Zeilenklick (COPI-208): der Link in der Zeilenkopfzelle wird über die ganze Zeile gespannt. */
+  .job-tabelle tbody tr {
+    @apply relative cursor-pointer hover:bg-accent-soft;
+  }
+
+  .job-tabelle tbody th a::after {
+    content: '';
+    @apply absolute inset-0;
+  }
+
+  .bereich-kopf {
+    @apply flex flex-wrap items-center justify-between gap-2;
+  }
+
+  /* Auch als `h2` (Bestätigung, COPI-40) ein Name, keine kleine Abschnittsüberschrift. */
+  .bereich-name {
+    @apply text-base font-bold normal-case tracking-normal text-ink;
+  }
+
+  .bereich-satz {
+    @apply text-[13px]/5 text-ink-2;
+  }
+
+  .plakette {
+    @apply rounded-full px-2.5 py-0.5 text-[11px] font-bold;
+  }
+
+  .plakette-gruen {
+    @apply bg-ok-soft text-ok;
+  }
+
+  .plakette-gelb {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .plakette-rot {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .plakette-info {
+    @apply bg-accent-soft text-accent;
+  }
+
+  .werte dd.digest-wert {
+    @apply min-w-0 flex-1;
+  }
+
+  .digest {
+    @apply block truncate text-right text-xs;
+  }
+
+  .werte dd.wert-warn {
+    @apply text-warn;
+  }
+
+  .werte dd.wert-rot {
+    @apply text-danger;
+  }
+
+  /* Der letzte Antrag (COPI-41): unter den Werten, durch eine Linie getrennt, mit kleiner Überschrift. */
+  .letzter-antrag {
+    @apply grid min-w-0 gap-2 border-t border-line pt-3;
+  }
+
+  .letzter-antrag-titel {
+    @apply text-xs font-bold uppercase tracking-wider text-ink-2;
+  }
+
+  /* Der Update-Antrag im Bereich (COPI-40): unter den Werten, durch eine Linie getrennt. */
+  .bereich-antrag {
+    @apply grid min-w-0 gap-3 border-t border-line pt-3;
+  }
+
+  /*
+   * „Update verfügbar" mit Knopf (COPI-140): die gemeldete Zeile und „Update installieren", mobil untereinander, ab `sm`
+   * nebeneinander. Darunter eingeklappt der Notweg „Bestimmten Stand wählen" mit der Eingabe eines Ziels.
+   */
+  .update-angebot {
+    @apply flex flex-col gap-3 rounded-2xl bg-accent-soft p-3.5 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .update-angebot .knopf {
+    @apply flex-none whitespace-nowrap;
+  }
+
+  .update-zeile {
+    @apply min-w-0 text-[13px]/5 font-semibold text-ink [overflow-wrap:anywhere];
+  }
+
+  .notweg-kopf {
+    @apply flex cursor-pointer list-none items-center gap-2 text-[13px] font-semibold text-ink-2 [&::-webkit-details-marker]:hidden;
+  }
+
+  .notweg-inhalt {
+    @apply mt-3 grid gap-3;
+  }
+
+  /* Die Bestätigung zeigt beide Digests vollständig, umbrechend statt gekürzt: man soll sie prüfen können. */
+  .digests {
+    @apply grid gap-3;
+  }
+
+  .digests dt {
+    @apply text-xs font-semibold text-ink-2;
+  }
+
+  .digest-voll {
+    @apply mt-0.5 block text-xs text-ink [overflow-wrap:anywhere];
+  }
+
+  /* Die Herkunft eines Moduls (COPI-106): Commit und Pfad ganz, umgebrochen statt abgeschnitten. */
+  .herkunft {
+    @apply block text-right text-xs [overflow-wrap:anywhere];
+  }
+
+  /*
+   * Der App-Rahmen der angemeldeten Seiten (COPI-43), Maße aus dem Prototyp. Ab `lg` eine Sidebar (226 px, Wortmarke
+   * 15 px, Instanzname 12 px, Einträge 13 px mit 18-px-Symbol, aktiver Eintrag hinterlegt, unten Dark Mode und
+   * Abmelden); darunter nur die Navigation, als feste Tab-Leiste unten (64 px, 21-px-Symbol, Beschriftung 10,5 px).
+   * Dasselbe Markup für beide Größen.
+   */
+  .app {
+    @apply lg:flex lg:min-h-dvh;
+  }
+
+  .rahmen {
+    @apply lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-[226px] lg:shrink-0 lg:flex-col lg:bg-side lg:px-3.5 lg:py-[22px];
+  }
+
+  .rahmen-marke {
+    @apply hidden lg:mb-[22px] lg:grid lg:gap-0.5 lg:px-2;
+  }
+
+  .rahmen-name {
+    @apply text-[15px] font-bold text-side-ink;
+  }
+
+  .rahmen-instanz {
+    @apply text-xs uppercase text-side-ink-2;
+  }
+
+  .hauptnav {
+    @apply fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:static lg:border-0 lg:bg-transparent lg:pb-0;
+  }
+
+  .hauptnav-liste {
+    @apply flex h-16 lg:h-auto lg:flex-col lg:gap-0.5;
+  }
+
+  .hauptnav-liste li {
+    @apply flex-1 lg:flex-none;
+  }
+
+  .hauptnav-eintrag {
+    @apply flex h-full flex-col items-center justify-center gap-[3px] text-[10.5px] font-semibold text-ink-3 no-underline lg:h-auto lg:flex-row lg:justify-start lg:gap-2.5 lg:rounded-[9px] lg:px-2.5 lg:py-[9px] lg:text-[13px] lg:text-side-ink;
+  }
+
+  a.hauptnav-eintrag:hover {
+    @apply lg:bg-side-act;
+  }
+
+  /* Aktiv: mobil Akzent in der Tab-Leiste, am Desktop Navy-Hinterlegung mit 3-px-Balken links (COPI-214). */
+  a.hauptnav-eintrag[aria-current='page'] {
+    @apply text-accent lg:bg-side-act lg:text-side-act-ink lg:shadow-[inset_3px_0_0_var(--color-side-mark)];
+  }
+
+  .hauptnav-eintrag .symbol {
+    @apply size-[21px] lg:size-[18px];
+  }
+
+  /* Ausgegraut: das Ziel gibt es noch nicht (Chat mit E4, Module mit E5). Kein Link, nicht fokussierbar. */
+  /* „Mehr" nur in der mobilen Tab-Leiste (COPI-108). */
+  .hauptnav-nur-mobil {
+    @apply lg:hidden;
+  }
+
+  /* „Meldungen" neben einem angehefteten Modul und weitere angeheftete Module (COPI-121): nur in der Sidebar. */
+  .hauptnav-nur-desktop {
+    @apply max-lg:hidden;
+  }
+
+  /* Die Gruppe „Verwaltung" der Desktop-Sidebar (COPI-108): dieselben Einträge wie „Mehr", im Stil der Hauptnavigation. */
+  .verwaltungsnav {
+    @apply hidden lg:mt-[22px] lg:block;
+  }
+
+  .verwaltungsnav-titel {
+    @apply px-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-side-ink-2 uppercase;
+  }
+
+  .verwaltungsnav-liste {
+    @apply flex flex-col gap-0.5;
+  }
+
+  .hauptnav-folgt {
+    @apply cursor-default opacity-45;
+  }
+
+  .rahmen-fuss {
+    @apply hidden lg:mt-auto lg:grid lg:gap-2;
+  }
+
+  /*
+   * Die Versionszeile (COPI-84): klein und gedämpft; das Update-Symbol steht daneben. Mobil nur auf „Mehr"
+   * (`versionszeile-mobil`, am Desktop aus), in der Sidebar (`rahmen-fuss`, mobil ohnehin versteckt) am Desktop.
+   */
+  .versionszeile {
+    @apply flex items-center gap-1.5 px-1 text-[11px] text-ink-3 lg:text-side-ink-2;
+  }
+
+  .versionszeile-mobil {
+    @apply justify-center pt-4 lg:hidden;
+  }
+
+  /* Symbol als Link: sichtbarer Fokus, Tooltip bei Hover und Tastaturfokus (nicht nur `title`). */
+  .update-hinweis {
+    @apply relative inline-flex items-center rounded-full text-band-warn no-underline;
+  }
+
+  .update-hinweis .symbol {
+    @apply size-4 stroke-2;
+  }
+
+  .update-hinweis:focus-visible {
+    @apply outline-2 outline-offset-2 outline-band-warn;
+  }
+
+  .update-tipp {
+    @apply pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden w-56 rounded-lg border border-warn-rand bg-warn-hauch px-2.5 py-1.5 text-xs font-medium text-ink shadow-md [overflow-wrap:anywhere];
+  }
+
+  .update-hinweis:hover .update-tipp,
+  .update-hinweis:focus-visible .update-tipp {
+    @apply block;
+  }
+
+  .versionszeile-mobil .update-tipp {
+    @apply left-auto right-[-4.5rem];
+  }
+
+  .rahmen-knopf,
+  .darstellung-breit .darstellung-knopf {
+    @apply w-full cursor-pointer items-center gap-[9px] rounded-[9px] border border-side-act bg-transparent px-2.5 py-[9px] text-xs font-semibold text-side-ink hover:bg-side-act;
+  }
+
+  .rahmen-knopf {
+    @apply flex;
+  }
+
+  .rahmen-knopf .symbol,
+  .darstellung-knopf .symbol {
+    @apply size-4;
+  }
+
+  /* Dark Mode: beide Knöpfe stehen im Markup, sichtbar ist der, der zum geltenden Modus passt. */
+  .nur-hell {
+    @apply flex dunkel:hidden;
+  }
+
+  .nur-dunkel {
+    @apply hidden dunkel:flex;
+  }
+
+  /* „Wie System" (COPI-117): nur, wenn eine feste Wahl gilt — der Server setzt dann `data-theme`. */
+  .nur-gewaehlt {
+    @apply hidden;
+  }
+
+  :root[data-theme] .nur-gewaehlt {
+    @apply flex;
+  }
+
+  .darstellung-breit {
+    @apply grid gap-1.5;
+  }
+
+  .darstellung-rund {
+    @apply flex gap-2 lg:hidden;
+  }
+
+  .darstellung-rund .darstellung-knopf {
+    @apply size-[34px] cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-ink-2 hover:bg-page;
+  }
+
+  .darstellung-rund .darstellung-text {
+    @apply sr-only;
+  }
+
+  /* Der Inhalt neben der Sidebar; mobil mit Platz für die Tab-Leiste darunter. */
+  .app-inhalt {
+    @apply relative grid min-w-0 flex-1 content-start gap-6 px-5 pt-[26px] pb-[calc(92px+env(safe-area-inset-bottom))] lg:px-10 lg:py-[34px];
+  }
+
+  /*
+   * Der Posteingang (COPI-112, freigegebener Entwurf): ein 44-px-Knopf rechts oben im Inhalt, auf der Höhe des Titels,
+   * mit der Zahl in der Primärfarbe (Ungelesenes ist kein Fehler). Der Kopf der Seite hält rechts Platz für ihn frei.
+   * Aufgeklappt am Desktop ein Panel (400 px) unter dem Knopf, mobil ein Blatt von unten über einem abgedunkelten
+   * Hintergrund, über der Tab-Leiste.
+   */
+  .posteingang {
+    @apply absolute top-[22px] right-5 z-20 lg:top-[30px] lg:right-10;
+  }
+
+  /* Der Seitenkopf liegt im Rand des Inhalts, der Chat-Kopf reicht bis an den Rand: er braucht den Rand dazu. */
+  .app-inhalt:has(> .posteingang) .seiten-kopf {
+    @apply pr-14;
+  }
+
+  .app-inhalt:has(> .posteingang) .chat-kopf {
+    @apply pr-[76px] lg:pr-24;
+  }
+
+  .posteingang-knopf {
+    @apply relative flex size-11 cursor-pointer list-none items-center justify-center rounded-xl border border-line bg-surface text-ink-2 hover:bg-page [&::-webkit-details-marker]:hidden;
+  }
+
+  .posteingang[open] .posteingang-knopf {
+    @apply border-accent bg-accent-soft text-accent;
+  }
+
+  .posteingang-knopf .symbol {
+    @apply size-[21px];
+  }
+
+  .posteingang-zahl {
+    @apply absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full border-2 border-page bg-primary px-1.5 text-[11px] leading-none font-bold text-on-primary;
+  }
+
+  .posteingang-hintergrund {
+    @apply fixed inset-0 z-30 bg-black/40 lg:hidden;
+  }
+
+  .posteingang-panel {
+    @apply fixed inset-x-0 bottom-0 z-40 flex max-h-[85dvh] flex-col overflow-hidden rounded-t-[18px] bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_32px_rgb(0_0_0/0.18)];
+    @apply lg:absolute lg:inset-x-auto lg:top-[52px] lg:right-0 lg:bottom-auto lg:w-[400px] lg:max-h-[min(640px,80dvh)] lg:rounded-[14px] lg:border lg:border-line lg:pb-0 lg:shadow-[0_12px_32px_rgb(0_0_0/0.16)];
+  }
+
+  .posteingang-griff {
+    @apply mx-auto mt-2 h-1 w-10 shrink-0 rounded-sm bg-line lg:hidden;
+  }
+
+  .posteingang-kopf {
+    @apply flex shrink-0 items-center justify-between gap-2 px-4 pt-3 pb-2.5 lg:pt-4;
+  }
+
+  .posteingang-kopf h2 {
+    @apply text-base font-bold tracking-normal text-ink normal-case;
+  }
+
+  .posteingang-kopf h2 span {
+    @apply font-normal text-ink-3;
+  }
+
+  .posteingang-zu {
+    @apply -m-2.5 flex size-11 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-page lg:hidden;
+  }
+
+  .posteingang-zu .symbol {
+    @apply size-5;
+  }
+
+  .posteingang-filter {
+    @apply flex shrink-0 flex-wrap gap-1.5 px-4 pb-3;
+  }
+
+  .posteingang-filter[hidden] {
+    @apply hidden;
+  }
+
+  .posteingang-chip {
+    @apply cursor-pointer rounded-full border border-line bg-surface px-[11px] py-[5px] text-xs font-semibold text-ink-2 hover:bg-page;
+  }
+
+  .posteingang-chip[aria-pressed='true'] {
+    @apply border-accent-soft bg-accent-soft text-accent;
+  }
+
+  .posteingang-liste {
+    @apply min-h-0 overflow-y-auto border-t border-line;
+  }
+
+  .posteingang-liste li + li {
+    @apply border-t border-line;
+  }
+
+  .posteingang-liste[data-filter='chat'] li:not([data-quelle='chat']),
+  .posteingang-liste[data-filter='postfach'] li:not([data-quelle='postfach']),
+  .posteingang-liste[data-filter='meldung'] li:not([data-quelle='meldung']),
+  .posteingang-liste[data-filter='freigabe'] li:not([data-quelle='freigabe']) {
+    @apply hidden;
+  }
+
+  .posteingang-eintrag {
+    @apply flex gap-3 px-4 py-3 text-ink no-underline hover:bg-page;
+  }
+
+  .posteingang-art {
+    @apply grid size-[34px] shrink-0 place-items-center rounded-[10px] bg-accent-soft text-accent;
+  }
+
+  .posteingang-art .symbol {
+    @apply size-[17px];
+  }
+
+  .posteingang-eintrag-aufgabe {
+    @apply bg-warn-soft hover:bg-warn-soft;
+  }
+
+  .posteingang-art-freigabe {
+    @apply bg-surface text-warn;
+  }
+
+  .posteingang-art-meldung {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .posteingang-art-rot {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .posteingang-text {
+    @apply grid min-w-0 flex-1 grid-cols-1 gap-0.5;
+  }
+
+  .posteingang-meta {
+    @apply flex justify-between gap-2 text-[11px] font-semibold text-ink-3;
+  }
+
+  .posteingang-meta span:last-child {
+    @apply font-normal whitespace-nowrap;
+  }
+
+  .posteingang-titel {
+    @apply flex items-center gap-1.5 text-[13.5px] font-bold;
+  }
+
+  .posteingang-titel span:last-child {
+    @apply truncate;
+  }
+
+  .posteingang-punkt {
+    @apply size-[7px] shrink-0 rounded-full bg-accent;
+  }
+
+  .posteingang-anriss {
+    @apply line-clamp-2 text-[12.5px] leading-[1.4] text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .posteingang-leer {
+    @apply border-t border-line px-4 py-6 text-center text-[13px] text-ink-3;
+  }
+
+  .posteingang-fuss {
+    @apply flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5;
+  }
+
+  .posteingang-alle {
+    @apply flex min-h-9 cursor-pointer items-center gap-1.5 rounded-[9px] border border-line bg-surface px-2.5 text-[12.5px] font-semibold text-ink-2 hover:bg-page;
+  }
+
+  .posteingang-alle .symbol {
+    @apply size-[15px];
+  }
+
+  .posteingang-links {
+    @apply ml-auto text-xs text-ink-3;
+  }
+
+  .posteingang-links a {
+    @apply font-semibold text-accent no-underline hover:underline;
+  }
+
+  /* Eine schmale Seite wie die Einstellungen des Prototyps (640 px): Kopf und Karten in einer Spalte. */
+  .seite-schmal {
+    @apply grid w-full min-w-0 max-w-[640px] content-start gap-6;
+  }
+
+  /* Ein Formular in einer angemeldeten Seite (Einladen): die schmale Karte der Formularseiten. */
+  .formular-karte {
+    @apply grid w-full max-w-md gap-5 rounded-2xl border border-line bg-surface p-5 sm:p-8;
+  }
+
+  /*
+   * Meldungen (COPI-43), Maße aus dem Prototyp: Suche (340 px am Desktop) und Filter-Chips in einer Reihe, darunter
+   * die Liste (am Desktop eine Karte, 760 px); je Zeile ein 30-px-Symbol in der Farbe des Status, Titel 13 px,
+   * darunter „vor … · Name" in 11 px.
+   */
+  .meldungen-seite {
+    @apply grid min-w-0 max-w-[760px] gap-4.5;
+  }
+
+  .meldungen-filter {
+    @apply grid gap-3 lg:flex lg:items-center;
+  }
+
+  .suche {
+    @apply flex items-center gap-2 rounded-[10px] border border-line bg-surface px-3 py-2.5 text-ink-3 lg:w-[340px];
+  }
+
+  .suche .symbol {
+    @apply size-[15px] shrink-0;
+  }
+
+  .suche-feld {
+    @apply w-full min-w-0 bg-transparent text-base text-ink placeholder:text-ink-3 focus:outline-none sm:text-[13px];
+  }
+
+  .suche:focus-within {
+    @apply outline-2 outline-offset-2 outline-focus;
+  }
+
+  .chips {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .chip {
+    @apply rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs font-semibold text-ink-2 no-underline hover:bg-page;
+  }
+
+  .chip[aria-current='true'] {
+    @apply border-primary bg-primary text-on-primary hover:bg-primary;
+  }
+
+  .meldungen-liste {
+    @apply grid lg:overflow-hidden lg:rounded-[14px] lg:border lg:border-line lg:bg-surface;
+  }
+
+  .meldungen-zeile {
+    @apply flex items-start gap-3 border-line py-3.5 lg:px-4.5;
+  }
+
+  .meldungen-zeile + .meldungen-zeile {
+    @apply border-t;
+  }
+
+  .meldungen-symbol {
+    @apply grid size-[30px] shrink-0 place-items-center rounded-lg;
+  }
+
+  .meldungen-symbol .symbol {
+    @apply size-4;
+  }
+
+  .meldungen-symbol-rot {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .meldungen-symbol-gelb {
+    @apply bg-warn-soft text-warn;
+  }
+
+  .meldungen-symbol-gruen {
+    @apply bg-ok-soft text-ok;
+  }
+
+  .meldungen-titel {
+    @apply text-[13px]/5 font-medium text-ink [overflow-wrap:anywhere];
+  }
+
+  .meldungen-meta {
+    @apply mt-[3px] flex flex-wrap items-center gap-1.5 text-[11px]/4 text-ink-3;
+  }
+
+  /* Eine Liste wie im Prototyp (Meldungen, Mehr): Zeilen mit Symbol, Text und Linie dazwischen. */
+  .liste {
+    @apply grid w-full max-w-2xl overflow-hidden rounded-[14px] border border-line bg-surface;
+  }
+
+  .liste > li + li {
+    @apply border-t border-line;
+  }
+
+  .liste-zeile {
+    @apply flex w-full cursor-pointer items-center gap-3 px-4.5 py-3.5 text-left text-[13px] font-medium text-ink no-underline hover:bg-page;
+  }
+
+  .liste-zeile[aria-current='page'] {
+    @apply text-accent;
+  }
+
+  /* Die gewählte Zeile der Modul-Liste am Desktop (COPI-78, Review): kein „aktuelle Seite", sondern „aktueller Eintrag". */
+  .liste-zeile[aria-current='true'] {
+    @apply bg-accent-soft text-accent;
+  }
+
+  .liste-symbol {
+    @apply grid size-[30px] shrink-0 place-items-center rounded-lg bg-page text-ink-2;
+  }
+
+  .liste-symbol .symbol {
+    @apply size-4;
+  }
+
+  .liste-text {
+    @apply min-w-0 flex-1;
+  }
+
+  .liste-weiter {
+    @apply text-ink-3;
+  }
+
+  .liste-weiter .symbol {
+    @apply size-4;
+  }
+
+  /*
+   * Module (COPI-78, Review): Liste und Detail nebeneinander am Desktop, wie der Bildschirm „Buchungen" des
+   * Prototyps — Liste ≈360 px links, rechts eine Karte (Detail bzw. Leerzustand). Mobil zeigt jede der beiden
+   * Seiten (`modul.eta`, `modul-detail.eta`) nur ihren eigenen Inhalt; welche Hälfte das ist, entscheiden die
+   * Modifizierer unten, nicht Skript.
+   */
+  .modul-splitt {
+    @apply lg:flex lg:items-start lg:gap-6;
+  }
+
+  .modul-splitt-liste {
+    @apply lg:w-[360px] lg:shrink-0;
+  }
+
+  /* Nur auf der Detailseite: mobil ausgeblendet (dort zählt nur das Detail), am Desktop wieder die linke Spalte. */
+  .modul-splitt-liste-detailseite {
+    @apply hidden lg:block;
+  }
+
+  .modul-splitt-rechts {
+    @apply lg:min-w-0 lg:flex-1 lg:rounded-[14px] lg:border lg:border-line lg:bg-surface lg:p-6;
+  }
+
+  /* Nur auf der Listenseite: der Leerzustand rechts existiert erst ab dem Desktop-Layout. */
+  .modul-splitt-rechts-nur-lg {
+    @apply hidden lg:flex lg:items-center lg:justify-center;
+  }
+
+  .modul-leer {
+    @apply grid justify-items-center gap-2.5 text-center text-[13px] text-ink-3;
+  }
+
+  .modul-leer .symbol {
+    @apply size-8;
+  }
+
+  .ueberspringen {
+    @apply absolute left-2 top-2 -translate-y-16 rounded-lg bg-surface px-3 py-2 text-sm focus:translate-y-0;
+  }
+
+  /* Zahl ungelesener Nachrichten am Chat in der Navigation (COPI-53). */
+  .hauptnav-eintrag {
+    @apply relative;
+  }
+
+  .hauptnav-zahl,
+  .chat-zahl {
+    @apply inline-grid min-w-[18px] place-items-center rounded-full bg-primary px-1.5 text-[10px] leading-[18px] font-bold text-on-primary;
+  }
+
+  .hauptnav-zahl {
+    @apply absolute top-1.5 left-[calc(50%+4px)] lg:static lg:ml-auto;
+  }
+
+  /* Hinweispunkt „Update verfügbar" (COPI-140): mobil an „Mehr" wie die Zahl am Chat, am Desktop rechts an „Einstellungen". */
+  .nav-punkt {
+    @apply absolute top-2 left-[calc(50%+8px)] size-2 rounded-full bg-warn lg:static lg:ml-auto;
+  }
+
+  .liste-zeile .hauptnav-zahl {
+    @apply static mr-1 ml-auto;
+  }
+
+  .liste-zeile .nav-punkt {
+    @apply static mr-1 ml-auto;
+  }
+
+  /*
+   * Der Chat (COPI-53), Maße aus dem Prototyp: mobil der Kanal über der ganzen Höhe bis zur Tab-Leiste (Kopf 20 px Titel
+   * mit KI-Marke, Blasen 13 px mit 78 % Breite, Eingabe als runde Zeile mit 36-px-Knopf); am Desktop links „Verlauf"
+   * (280 px) und rechts der Kanal (Blasen bis 520 px, Eingabe bis 640 px). Die Seite füllt den Inhalt ohne dessen Rand.
+   */
+  .app-inhalt:has(> .chat) {
+    @apply block p-0;
+  }
+
+  .chat {
+    @apply flex h-[calc(100dvh-64px-env(safe-area-inset-bottom))] min-h-0 lg:h-dvh;
+  }
+
+  .chat-kanaele {
+    @apply hidden lg:flex lg:w-[280px] lg:shrink-0 lg:flex-col lg:border-r lg:border-line;
+  }
+
+  .chat-kanaele-titel {
+    @apply px-[18px] pt-[22px] pb-3.5 text-[13px] font-bold tracking-[0.05em] text-ink-3 uppercase;
+  }
+
+  .chat-kanal {
+    @apply grid gap-[3px] border-b border-line px-[18px] py-3 text-ink no-underline hover:bg-page;
+  }
+
+  .chat-kanal[aria-current='page'] {
+    @apply border-l-2 border-b-0 border-l-accent bg-accent-soft hover:bg-accent-soft;
+  }
+
+  .chat-kanal-name {
+    @apply flex items-center justify-between gap-2 text-[13px] font-semibold;
+  }
+
+  .chat-kanal[aria-current='page'] .chat-kanal-name {
+    @apply font-bold;
+  }
+
+  .chat-kanal-vorschau {
+    @apply truncate text-xs text-ink-2;
+  }
+
+  /* Die Postfächer in „Verlauf" (COPI-112): eine zweite Gruppe unter den Kanälen, mit dem Brief-Symbol vor dem Namen. */
+  .chat-kanaele-titel-gruppe {
+    @apply pt-6;
+  }
+
+  .chat-kanal-fach {
+    @apply flex items-center gap-2;
+  }
+
+  .chat-kanal-fach .symbol {
+    @apply size-4 text-ink-2;
+  }
+
+  .chat-unterzeile {
+    @apply mt-1 text-xs text-ink-3;
+  }
+
+  /* Ein Postfach im Rahmen der Chat-Seite (COPI-112): Zeilen jüngste zuerst, Ungelesenes fett, mit Punkt und getönt. */
+  .postfach {
+    @apply min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-6 lg:px-8 lg:py-[22px];
+  }
+
+  .postfach-liste {
+    @apply overflow-hidden rounded-xl border border-line bg-surface;
+  }
+
+  .postfach-liste li + li {
+    @apply border-t border-line;
+  }
+
+  .postfach-zeile {
+    @apply flex gap-2.5 px-3.5 py-3 text-ink no-underline hover:bg-page;
+  }
+
+  .postfach-zeile-neu {
+    @apply bg-accent-soft/40;
+  }
+
+  .postfach-zeile .posteingang-punkt {
+    @apply mt-[7px];
+  }
+
+  .postfach-punkt-gelesen {
+    @apply bg-transparent;
+  }
+
+  .postfach-text {
+    @apply grid min-w-0 flex-1 grid-cols-1 gap-[3px];
+  }
+
+  .postfach-kopf {
+    @apply flex items-baseline justify-between gap-2;
+  }
+
+  .postfach-titel {
+    @apply min-w-0 truncate text-[13.5px];
+  }
+
+  .postfach-zeile-neu .postfach-titel {
+    @apply font-bold;
+  }
+
+  .postfach-zeit {
+    @apply shrink-0 text-[11.5px] text-ink-3;
+  }
+
+  .postfach-anriss {
+    @apply line-clamp-2 text-xs leading-[1.4] text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .postfach-status {
+    @apply flex items-center gap-1.5 text-[11.5px] font-semibold text-ink-2;
+  }
+
+  .chat-fenster {
+    @apply flex min-h-0 min-w-0 flex-1 flex-col;
+  }
+
+  .chat-kopf {
+    @apply flex shrink-0 items-start justify-between gap-3 border-b border-line bg-surface px-5 pt-6 pb-3.5 lg:bg-transparent lg:px-8 lg:pt-[22px] lg:pb-4;
+  }
+
+  .chat-titel {
+    @apply text-xl font-bold lg:text-[19px];
+  }
+
+  .ki-marke {
+    @apply mt-[7px] inline-flex items-center gap-[5px] rounded-full bg-page py-1 pr-2.5 pl-2 text-[11px] font-semibold text-ink-2;
+  }
+
+  .ki-marke .symbol {
+    @apply size-3;
+  }
+
+  .chat-wahl {
+    @apply mt-3 flex gap-2 lg:hidden;
+  }
+
+  .chat-verlauf {
+    @apply flex min-h-0 flex-1 flex-col-reverse overflow-y-auto px-4 pt-[18px] pb-2.5 lg:px-8 lg:py-[22px];
+  }
+
+  .chat-liste {
+    @apply flex flex-col gap-3.5;
+  }
+
+  .chat-leer,
+  .chat-blaettern {
+    @apply text-center text-xs text-ink-3;
+  }
+
+  .chat-nachricht {
+    @apply flex max-w-[78%] flex-col items-start lg:max-w-[520px];
+  }
+
+  .chat-nachricht-eigen {
+    @apply items-end self-end;
+  }
+
+  .chat-blase {
+    @apply rounded-[14px_14px_14px_4px] border border-line bg-surface px-[13px] py-2.5 text-[13px] leading-[1.45] whitespace-pre-wrap text-ink [overflow-wrap:anywhere] lg:px-3.5 lg:py-[11px];
+  }
+
+  .chat-nachricht-eigen .chat-blase {
+    @apply rounded-[14px_14px_4px_14px] border-primary bg-primary text-on-primary;
+  }
+
+  .chat-blase-dringend {
+    @apply border-warn;
+  }
+
+  .chat-blase-geloescht {
+    @apply text-ink-3 italic;
+  }
+
+  .chat-nachricht-eigen .chat-blase-geloescht {
+    @apply border-line bg-surface text-ink-3;
+  }
+
+  .chat-meta {
+    @apply mt-1 text-[10.5px] text-ink-3;
+  }
+
+  /* Der Stand der Antwort unter der letzten Frage (COPI-54): noch in der Frist, oder schon darüber. */
+  .chat-hinweis {
+    @apply text-xs text-ink-2 italic;
+  }
+
+  .chat-hinweis-warnung {
+    @apply rounded-[10px] bg-warn-soft px-3 py-2 text-warn not-italic;
+  }
+
+  /* Häkchen an eigenen Nachrichten (COPI-69): ein Haken gesendet, zwei angenommen, zwei in Akzentfarbe beantwortet. */
+  .chat-haken {
+    @apply inline-flex items-center align-middle;
+  }
+
+  .chat-haken .symbol {
+    @apply size-3.5 stroke-[2.2];
+  }
+
+  .chat-haken[data-chat-status='gesendet'] .chat-haken-zwei,
+  .chat-haken:not([data-chat-status='gesendet']) .chat-haken-eins {
+    @apply hidden;
+  }
+
+  .chat-haken[data-chat-status='beantwortet'] {
+    @apply text-accent;
+  }
+
+  /* Trenner vor der ersten ungelesenen Nachricht (COPI-69): dezente Linie, "Neu" mittig in der Akzentfarbe. */
+  .chat-neu {
+    @apply flex items-center gap-3 text-[11px] font-semibold text-accent;
+  }
+
+  .chat-neu::before,
+  .chat-neu::after {
+    @apply h-px flex-1 bg-accent-rand content-[''];
+  }
+
+  .chat-meta abbr {
+    @apply no-underline;
+  }
+
+  .chat-eingabe {
+    @apply flex shrink-0 flex-wrap items-center gap-2 border-t border-line bg-surface px-3.5 py-2.5 lg:gap-2.5 lg:bg-transparent lg:px-8 lg:py-4;
+  }
+
+  .chat-fehler {
+    @apply w-full;
+  }
+
+  /* Benachrichtigungen in den Einstellungen (COPI-58): ein Satz je Zustand, für iPhone/iPad die Schritte. */
+  .push-hinweise {
+    @apply grid gap-2 text-[13px] leading-[1.5] text-ink-2;
+  }
+
+  .push-hinweise > div {
+    @apply grid gap-2;
+  }
+
+  .push-schritte {
+    @apply grid list-decimal gap-1 pl-5;
+  }
+
+  /* Push an/aus und die Liste der Geräte (COPI-59). */
+  .push-steuerung {
+    @apply mt-1 flex flex-wrap items-center gap-2;
+  }
+
+  .push-meldung {
+    @apply w-full text-xs text-danger;
+  }
+
+  /* Test-Push (COPI-116): unter der Überschrift der Geräteliste. */
+  .push-test {
+    @apply mt-2 mb-1;
+  }
+
+  .push-geraete {
+    @apply grid gap-2;
+  }
+
+  .push-geraet {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .push-geraet-name {
+    @apply text-[13px] font-semibold text-ink;
+  }
+
+  .push-geraet-meta {
+    @apply text-xs text-ink-3;
+  }
+
+  /* Erscheinungsbild (COPI-101): das App-Symbol so, wie es auf iPhone, Android und im Browser-Tab erscheint. */
+  .symbol-stand {
+    @apply text-xs text-ink-2;
+  }
+
+  .symbol-vorschau {
+    @apply grid gap-2;
+  }
+
+  .symbol-figuren {
+    @apply flex flex-wrap items-end gap-4.5;
+  }
+
+  .symbol-figur {
+    @apply flex flex-col items-center gap-1.5 text-[11.5px] text-ink-2;
+  }
+
+  .symbol-ios,
+  .symbol-android {
+    @apply size-16 overflow-hidden shadow-sm;
+  }
+
+  .symbol-ios {
+    @apply rounded-[15px];
+  }
+
+  .symbol-android {
+    @apply rounded-full;
+  }
+
+  .symbol-tab {
+    @apply flex h-7 items-center gap-1.5 rounded-t-lg bg-page px-2.5 text-[11.5px] text-ink;
+  }
+
+  .symbol-tab-bild {
+    @apply size-4 rounded-[3px];
+  }
+
+  .symbol-wahl,
+  .symbol-optionen {
+    @apply grid gap-3;
+  }
+
+  /* Das Datei-Feld ist unsichtbar; der Knopf zeigt, wenn es den Fokus hat. */
+  .symbol-waehlen {
+    @apply focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent;
+  }
+
+  .symbol-rand {
+    @apply grid gap-1;
+  }
+
+  .symbol-rand legend,
+  .symbol-farbe > label {
+    @apply mb-1 text-[13.5px] font-semibold text-ink;
+  }
+
+  .symbol-rand label {
+    @apply flex min-h-11 items-center gap-2.5 text-sm text-ink;
+  }
+
+  .symbol-rand input {
+    @apply size-5 accent-primary;
+  }
+
+  .symbol-farbe {
+    @apply grid gap-1;
+  }
+
+  .symbol-farbe > div {
+    @apply flex flex-wrap items-center gap-2.5;
+  }
+
+  .symbol-farbe input {
+    @apply size-11 cursor-pointer rounded-[10px] border border-field-line bg-surface p-0.5;
+  }
+
+  .symbol-farbwert {
+    @apply font-mono text-[13.5px] text-ink;
+  }
+
+  /* Der Rest des Tageslimits ab 80 % (COPI-57). */
+  .chat-rest {
+    @apply w-full text-xs text-ink-2;
+  }
+
+  .chat-feld {
+    @apply max-h-40 min-w-0 flex-1 resize-none rounded-[20px] border border-line bg-page px-3.5 py-2.5 text-base text-ink placeholder:text-ink-3 sm:text-[13px] lg:max-w-[640px] lg:px-4 lg:py-[11px];
+  }
+
+  .chat-senden {
+    @apply grid size-9 shrink-0 cursor-pointer place-items-center rounded-full bg-primary text-on-primary lg:size-[38px];
+  }
+
+  .chat-senden .symbol {
+    @apply size-4;
+  }
+
+  /* Freigabe-Inbox (COPI-139): Deutsch und Original links, Entwurf rechts; fremde Texte brechen um und behalten ihre Zeilen. */
+  .freigabe-spalten {
+    @apply mt-4 grid gap-6 lg:grid-cols-2;
+  }
+
+  .freigabe-spalten h2 {
+    @apply text-sm font-semibold text-ink;
+  }
+
+  .freigabe-spalten h3 {
+    @apply mt-4 text-xs font-semibold text-ink-3;
+  }
+
+  .freigabe-text {
+    @apply mt-1 text-[13px]/5 whitespace-pre-line text-ink-2 [overflow-wrap:anywhere];
+  }
+
+  .freigabe-fremd {
+    @apply mt-1 rounded-lg border border-dashed border-line bg-page p-3 text-[13px]/5 whitespace-pre-line text-ink-2 [overflow-wrap:anywhere];
+  }
+}

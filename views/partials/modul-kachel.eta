@@ -1,0 +1,69 @@
+<%/*
+  Eine Kachel der Modulseite (COPI-82, `darstellung: kacheln`): Kopf (Kürzel, Titel, Status als Punkt + Wort),
+  die deklarierten Spalten außer titel/status/aktualisiert_am, „Letzte 7 Tage" mit Band (nur mit lesbarer
+  Verlaufs-View — sonst entfällt der Block, `it.kachel.band` ist dann `undefined`) und die Fußzeile. Die ganze
+  Kachel ist ein Link auf die Detailseite der Zeile; „Details" ist deshalb nur Text, kein zweiter Link.
+  Hervorhebung (Rand + Hauch-Grund) wie die Dashboard-Karten (COPI-81), nur für rot und gelb. Moduldaten kommen
+  aus einer Fach-View: alles wird escaped, nichts sonst verlinkt (JAC-577). Angabe: `kachel` (aus
+  `kachelnAnsicht`).
+
+  Mit Messwert (COPI-83, `kachel.messwert`): der aktuelle Wert rechts im Kopf („aktuell"), über dem Band eine
+  7-Tage-Kurve mit Tageskürzeln und — bei `wert_warnung` — gestrichelter Warnlinie; rechts in der Label-Zeile
+  „min. … · max. …". Das Band bleibt darunter, nur schmaler; die Verfügbarkeit steht dann unter ihm.
+
+  Übernommen (COPI-85, `kachel.sperre`): unter dem Kopf die Marke „übernommen · <Vorname> · seit <Zeit>".
+*/%>
+<% const hervorgehoben = it.kachel.status.farbe === 'rot' || it.kachel.status.farbe === 'gelb'; %>
+<% const m = it.kachel.messwert; %>
+<% const kurve = m ? m.kurve : undefined; %>
+<li class="min-w-0">
+  <a href="<%= it.kachel.href %>" class="dienst<% if (hervorgehoben) { %> dienst-<%= it.kachel.status.farbe %><% } %>">
+    <span class="dienst-kopf">
+      <%~ include('./dienst-kuerzel', { kuerzel: it.kachel.kuerzel, farbe: it.kachel.status.farbe, gross: true }) %>
+      <span class="min-w-0 flex-1 grid gap-0.5">
+        <span class="dienst-titel"><%= it.kachel.titel %></span>
+        <span class="dienst-status-wort dienst-status-wort-<%= it.kachel.status.farbe %>"><span class="punkt punkt-<%= it.kachel.status.farbe %>" aria-hidden="true"></span><%= it.kachel.status.wort %></span>
+      </span>
+      <% if (m) { %>
+      <span class="messwert-kopf">
+        <span><span class="messwert-kachel-wert messwert-wert-<%= m.farbe %>"><%= m.wert %></span><% if (m.einheit !== '') { %> <span class="messwert-einheit"><%= m.einheit %></span><% } %></span>
+        <span class="messwert-aktuell">aktuell</span>
+      </span>
+      <% } %>
+    </span>
+    <% if (it.kachel.sperre) { %>
+    <%~ include('./sperr-marke', { sperre: it.kachel.sperre, mitZeit: true }) %>
+    <% } %>
+    <% if (it.kachel.felder.length > 0) { %>
+    <dl class="dienst-felder">
+      <% for (const feld of it.kachel.felder) { %>
+      <div><dt class="dienst-feld-label"><%= feld.label %></dt><dd class="dienst-feld-wert"><%= feld.wert %></dd></div>
+      <% } %>
+    </dl>
+    <% } %>
+    <% if (it.kachel.band) { %>
+    <div class="dienst-band">
+      <div class="dienst-band-kopf">
+        <span class="dienst-feld-label">Letzte 7 Tage</span>
+        <span class="dienst-feld-wert"><%= kurve ? kurve.minMax : it.kachel.verfuegbarkeit %></span>
+      </div>
+      <% if (kurve) { %>
+      <%~ include('./messwert-kurve', { kurve: kurve, farbe: m.farbe, klasse: 'kurve-kachel', warnlinie: true }) %>
+      <ol class="kurve-tage" aria-hidden="true">
+        <% for (const tag of it.kachel.kurvenTage) { %>
+        <li><%= tag %></li>
+        <% } %>
+      </ol>
+      <%~ include('./band', { band: it.kachel.band, klasse: 'band-kachel-schmal' }) %>
+      <span class="band-achse band-achse-rechts"><span><%= it.kachel.verfuegbarkeit %></span></span>
+      <% } else { %>
+      <%~ include('./band', { band: it.kachel.band, klasse: 'band-kachel' }) %>
+      <% } %>
+    </div>
+    <% } %>
+    <div class="dienst-fuss<% if (hervorgehoben) { %> dienst-fuss-<%= it.kachel.status.farbe %><% } %>">
+      <span><%= it.kachel.geprueft %></span>
+      <span class="dienst-fuss-details">Details</span>
+    </div>
+  </a>
+</li>

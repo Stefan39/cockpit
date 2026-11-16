@@ -1,0 +1,91 @@
+<%/*
+  Ein Modul im Abschnitt „Versionen" (COPI-106), nur Betreuersicht. Angaben: `modul` (`ModulBereich`,
+  `status/versionen.ts`) und `antrag` wie in `einstellungen.eta` (`moeglich`, dazu `hinweis`, `fehler`, `eingabe` und
+  `modul` — Rückmeldungen gelten nur, wenn `antrag.modul` diese Kennung ist). Alles escaped: Herkunft und Text der
+  Versions-Wache kommen vom Admin-Agenten. Das Cockpit beantragt nur; einspielen tut der Admin-Agent (ADR 13.1).
+  COPI-140: meldet die Wache ein Ziel (`m.update`), steht es mit „Update installieren" oben im Antragsteil — der Knopf
+  schickt nur `quelle=wache`, das Ziel liest der Server. Die Eingabe eines Commits ist der eingeklappte Notweg
+  (`<details class="notweg">`); nach einer falschen Eingabe ist er offen. `nur-konsole`: Herkunft nicht unter module/, kein Antrag.
+*/%>
+<% const m = it.modul %>
+<% const hier = it.antrag.modul === m.kennung %>
+<li class="bereich">
+  <div class="bereich-kopf">
+    <h3 class="bereich-name"><%= m.name %></h3>
+    <% if (m.marke) { %>
+    <span class="plakette plakette-<%= m.marke.farbe %>"><%= m.marke.text %></span>
+    <% } else if (m.antrag.art === 'ohne-herkunft') { %>
+    <span class="plakette plakette-info">ohne Herkunft</span>
+    <% } %>
+  </div>
+  <dl class="werte">
+    <div><dt>Version in der Registry</dt><dd><%= m.version %></dd></div>
+    <div><dt>Herkunft</dt><dd class="digest-wert"><% if (m.herkunft) { %><code class="herkunft"><%= m.herkunft %></code><% } else { %>von Hand eingespielt<% } %></dd></div>
+    <% if (m.sollCommit) { %>
+    <div><dt>Ziel</dt><dd class="digest-wert"><code class="digest"><%= m.sollCommit %></code></dd></div>
+    <% } %>
+    <% if (m.antrag.art !== 'ohne-herkunft') { %>
+    <div><dt>Verfügbar</dt><dd><%= m.verfuegbar ?? 'noch nicht gemeldet' %></dd></div>
+    <div><dt>Versions-Wache</dt><dd<% if (m.wache.ueberfaellig) { %> class="wert-warn"<% } %>><%= m.wache.text %></dd></div>
+    <% } %>
+  </dl>
+  <% if (m.letzterAntrag) { %>
+  <% const letzter = m.letzterAntrag %>
+  <section class="letzter-antrag" aria-labelledby="letzter-antrag-<%= letzter.nummer %>">
+    <h4 id="letzter-antrag-<%= letzter.nummer %>" class="letzter-antrag-titel">Letzter Antrag Nr. <%= letzter.nummer %></h4>
+    <dl class="werte">
+      <div><dt>Stand</dt><dd<% if (letzter.haengt || letzter.grund) { %> class="wert-rot"<% } %>><%= letzter.stand %></dd></div>
+      <% if (letzter.grund) { %>
+      <div><dt>Grund</dt><dd class="wert-rot"><%= letzter.grund %></dd></div>
+      <% } %>
+      <div><dt>Freigabe</dt><dd><%= letzter.freigabe %></dd></div>
+      <div><dt>Ziel</dt><dd class="digest-wert"><code class="digest"><%= letzter.zielCommit %></code></dd></div>
+      <div><dt>Weg zurück</dt><dd class="digest-wert"><code class="herkunft"><%= letzter.herkunftVorher %></code></dd></div>
+      <% for (const stufe of letzter.stufen) { %>
+      <div><dt><%= stufe.name %></dt><dd><%= stufe.wann %></dd></div>
+      <% } %>
+    </dl>
+  </section>
+  <% } %>
+  <% if (it.antrag.moeglich) { %>
+  <div class="bereich-antrag">
+    <% if (hier && it.antrag.hinweis) { %>
+    <%~ include('./hinweis', { art: 'ok', text: it.antrag.hinweis }) %>
+    <% } %>
+    <% if (hier && it.antrag.fehler) { %>
+    <%~ include('./hinweis', { art: 'fehler', text: it.antrag.fehler }) %>
+    <% } %>
+    <% if (m.antrag.art === 'beantragen') { %>
+    <% if (m.letzterAntrag && m.letzterAntrag.grund) { %>
+    <%~ include('./hinweis', { art: 'info', text: 'Fachmigrationen spielt der Einrichter von Hand ein (nur hinzufügend, nie löschend). Danach das Update neu beantragen.' }) %>
+    <% } %>
+    <% if (m.update) { %>
+    <%~ include('./update-angebot', { zeile: m.update.zeile, automatik: m.update.automatik, aktion: '/einstellungen/modul-update', modul: m.kennung }) %>
+    <% } %>
+    <details class="notweg"<% if (hier && it.antrag.eingabe !== undefined) { %> open<% } %>>
+    <summary class="notweg-kopf"><span>Bestimmten Stand wählen</span><span class="aufklapp-pfeil" aria-hidden="true"></span></summary>
+    <div class="notweg-inhalt">
+    <%/* COPI-115: was ins Feld gehört — nur der Commit, nicht die Herkunft — und dass der Antrag selbst nichts ändert. */%>
+    <p class="bereich-satz">Der Antrag ändert noch nichts: nach der Freigabe spielt der Admin-Agent das Update ein.</p>
+    <form method="post" action="/einstellungen/modul-update" class="formular">
+      <input type="hidden" name="modul" value="<%= m.kennung %>" />
+      <%~ include('./feld', { id: 'ziel-' + m.kennung, name: 'ziel', label: 'Ziel-Commit', mono: true, wert: hier ? it.antrag.eingabe : undefined, autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', hilfe: 'Nur der Commit in agent-blueprints, auf den das Modul aktualisiert werden soll – 7 bis 40 Zeichen 0–9 a–f, z. B. 8d41e07. Nicht die ganze Herkunft (agent-blueprints@…:pfad) – die gehört zu modul-einspielen auf dem Host.' }) %>
+      <div><%~ include('./knopf', { text: 'Diesen Stand beantragen', art: 'sekundaer' }) %></div>
+    </form>
+    </div></details>
+    <% } else if (m.antrag.art === 'nur-konsole') { %>
+    <p class="bereich-satz">Herkunft nicht unter module/: Update nur per Server-Konsole (<code>einspielen <%= m.kennung %> &lt;commit&gt;</code>). Danach lässt sich das Modul hier aktualisieren.</p>
+    <% } else if (m.antrag.art === 'ohne-herkunft') { %>
+    <p class="bereich-satz">Ein Update lässt sich erst beantragen, wenn das Modul mit Herkunft aus agent-blueprints eingespielt ist.</p>
+    <% } else if (m.antrag.art === 'zurueckziehen') { %>
+    <p class="bereich-satz"><%= m.antrag.satz %></p>
+    <form method="post" action="/einstellungen/update/zurueckziehen">
+      <input type="hidden" name="id" value="<%= m.antrag.id %>" />
+      <%~ include('./knopf', { text: 'Antrag zurückziehen', art: 'sekundaer' }) %>
+    </form>
+    <% } else { %>
+    <p class="bereich-satz"><%= m.antrag.satz %></p>
+    <% } %>
+  </div>
+  <% } %>
+</li>

@@ -1,0 +1,35 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Bestätigung des Update-Antrags (COPI-40): ein Schritt gegen Fehlklicks. Beide Digests stehen vollständig da,
+  damit man sie Zeichen für Zeichen prüfen kann. Angaben: `vorher` (der laufende Digest), `ziel`, und für das
+  Formular `bis` und `token` (die signierte Bestätigung, `status/update-antrag.ts`). Erst dieses Formular stellt
+  den Antrag; „Abbrechen" führt ohne Antrag zurück. Vom Knopf „Update installieren" (COPI-140): `quelle` (`wache`, wird
+  weitergetragen), `version` (die gemeldete Version) und `hinweis`, wenn die Wache inzwischen ein anderes Ziel meldet.
+  Freigabemodus (COPI-141): `modus` (wird weitergetragen) und `notweg`, siehe `partials/freigabe-ankuendigung.eta`.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/einstellungen', ziel: 'Einstellungen' } }) %>
+<section class="bereich" aria-labelledby="bestaetigen-titel">
+  <h2 id="bestaetigen-titel" class="bereich-name">Cockpit</h2>
+  <p class="bereich-satz">Bitte prüfen: Das Cockpit soll vom laufenden Digest auf das Ziel wechseln.</p>
+  <% if (it.hinweis) { %>
+  <%~ include('partials/hinweis', { art: 'info', text: it.hinweis }) %>
+  <% } %>
+  <dl class="digests">
+    <div><dt>Läuft jetzt</dt><dd><code class="digest-voll"><%= it.vorher %></code></dd></div>
+    <div><dt>Ziel<% if (it.version) { %> (Version <%= it.version %>)<% } %></dt><dd><code class="digest-voll"><%= it.ziel %></code></dd></div>
+  </dl>
+  <%~ include('partials/freigabe-ankuendigung', { modus: it.modus, notweg: it.notweg, rueckfrage: 'Das Cockpit aktualisiert sich nicht selbst. Der Antrag wird außerhalb des Cockpits freigegeben, erst danach spielt der Admin-Agent das Update ein. Bis zur Freigabe lässt er sich in den Einstellungen zurückziehen.' }) %>
+  <form method="post" action="/einstellungen/update/bestaetigen" class="knopf-reihe">
+    <input type="hidden" name="ziel" value="<%= it.ziel %>" />
+    <% if (it.quelle) { %>
+    <input type="hidden" name="quelle" value="<%= it.quelle %>" />
+    <% } %>
+    <input type="hidden" name="modus" value="<%= it.modus %>" />
+    <input type="hidden" name="bis" value="<%= it.bis %>" />
+    <input type="hidden" name="token" value="<%= it.token %>" />
+    <%~ include('partials/knopf', { text: it.modus === 'direkt' ? 'Freigeben und installieren' : 'Antrag stellen' }) %>
+    <a href="/einstellungen" class="knopf knopf-sekundaer">Abbrechen</a>
+  </form>
+</section>
+</div>

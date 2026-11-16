@@ -1,0 +1,18 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die neuen Ersatzcodes (COPI-94), genau einmal: die Seite ist `no-store`, in der Datenbank steht nur ihr Hash.
+  Angaben: `ersatzcodes`.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/sicherheit', ziel: 'Anmeldung & Sicherheit' } }) %>
+<section class="bereich" aria-labelledby="codes-titel">
+  <h2 id="codes-titel" class="bereich-name"><%= it.ersatzcodes.length %> neue Ersatzcodes</h2>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Werden nur jetzt angezeigt – bitte sicher notieren. Die bisherigen Codes gelten ab sofort nicht mehr.' }) %>
+  <ul class="codes">
+    <% for (const code of it.ersatzcodes) { %>
+    <li><code><%= code %></code></li>
+    <% } %>
+  </ul>
+  <div class="knopf-reihe"><a href="/sicherheit" class="knopf knopf-primaer">Notiert – zurück</a></div>
+</section>
+</div>

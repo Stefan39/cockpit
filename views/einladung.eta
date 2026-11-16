@@ -1,0 +1,30 @@
+<% layout('layout', { nav: it.nav }) %>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/mehr', ziel: 'Mehr' } }) %>
+<div class="formular-karte">
+<p>
+  Der eingeladene Zugang richtet Passwort und zweiten Faktor selbst ein.
+</p>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<% if (it.erfolgFuer) { %>
+<%~ include('partials/hinweis', { art: 'ok', text: `Einladung an ${it.erfolgFuer} verschickt${it.erfolgRolle ? ` (Rolle „${it.erfolgRolle}")` : ''}. Sie ist ${it.gueltigStunden} Stunden gültig.` }) %>
+<% } %>
+<form method="post" action="/einladung" class="formular">
+  <%~ include('partials/feld', { id: 'email', name: 'email', typ: 'email', label: 'E-Mail-Adresse', autocomplete: 'off' }) %>
+  <% if (it.rollen.length > 1) { %>
+  <div class="feld">
+    <label for="rolle">Rolle</label>
+    <select id="rolle" name="rolle" class="eingabe">
+      <% for (const rolle of it.rollen) { %>
+      <option value="<%= rolle.wert %>"<% if (rolle.vorgabe) { %> selected<% } %>><%= rolle.name %></option>
+      <% } %>
+    </select>
+  </div>
+  <% } else { %>
+  <p>Der eingeladene Zugang erhält die Rolle „<%= it.rollen[0].name %>".</p>
+  <input type="hidden" name="rolle" value="<%= it.rollen[0].wert %>" />
+  <% } %>
+  <%~ include('partials/knopf', { text: 'Einladung verschicken' }) %>
+</form>
+</div>

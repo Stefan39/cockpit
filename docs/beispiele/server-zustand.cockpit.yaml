@@ -1,0 +1,24 @@
+# Beispiel-Modul „Server & Dienste" (COPI-78): der Modul-Block zur View
+# `docs/beispiele/v_modul_server_zustand.sql`. Zeigt den Herzschlag der Wachen (COPI-36/37) als Modul —
+# dasselbe Bild wie die Übersicht, aber über den deklarierten Modul-Vertrag statt eigens programmiert.
+# `uebersicht:` (COPI-81) meldet die Karten für das Dashboard der Übersicht an; die Bänder kommen aus der
+# Verlaufs-View `docs/beispiele/v_modul_server_zustand_verlauf.sql`.
+cockpit:
+  kennung: server-zustand
+  art: betrieb
+  menuename: "Server & Dienste"
+  ansicht: liste-detail
+  view: v_modul_server_zustand
+  darstellung: kacheln
+  spalten:
+    - { name: titel, label: "Bereich" }
+    - { name: status, label: "Status" }
+    - { name: text, label: "Meldung" }
+    - { name: aktualisiert_am, label: "Zuletzt gemeldet", format: zeitpunkt }
+  rollen: [betreuer, betriebs_admin]
+  eingriffe: []
+  uebersicht:
+    titel: "Server & Dienste"
+    kurztext: text
+    verlauf: v_modul_server_zustand_verlauf
+    reihenfolge: 10

@@ -1,0 +1,116 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Detailseite einer Modul-Zeile (COPI-78): alle deklarierten Spalten mit Label, wie die Karten der Agenten
+  und Konten (`dl`/`dt`/`dd`); die Pflichtspalte `status` immer als Punkt + Wort wie in der Liste (Review
+  COPI-78), gleich ob der Block sie deklariert (`modulDetailAnsicht`). Angaben: `kennung`, `id`, `verfuegbar`,
+  `zeilen` (aus `modulListeAnsicht`, für die linke Spalte am Desktop), `felder` (aus `modulDetailAnsicht`).
+
+  Am Desktop wie im Prototyp „Buchungen" (Review COPI-78): links dieselbe Liste wie `modul.eta`
+  (`partials/modul-liste`), die gewählte Zeile markiert (`aria-current`), rechts das Detail. Mobil unverändert
+  nur das Detail mit dem Zurück-Knopf zur Liste (COPI-100; von einer Übersichtskarte zur Übersicht) — der Knopf ist am
+  Desktop ausgeblendet, dort führt die linke Spalte selbst
+  zurück.
+
+  Moduldaten kommen aus einer Fach-View, nicht aus dem Cockpit selbst: alles wird escaped, nichts automatisch
+  verlinkt (dieselbe Regel wie bei Gästeinhalten im Chat, JAC-577).
+
+  Scheitert die erneute Katalogprüfung, gibt es weder Liste noch Detail, nur den neutralen Hinweis statt
+  (möglicherweise nun unerlaubter) Daten.
+
+  Übernahme (COPI-85, Entwurf „Übernahme", `uebernahme`): Ist der Vorgang frei und erlaubt der Block `uebernehmen`,
+  steht oben im Detail der Knopf „Übernehmen" (am Desktop rechts, mobil in voller Breite) mit dem grauen Hinweis. Ist
+  er übernommen, steht dort stattdessen das Band (`role="status"`) mit Schloss, „Von <Name> übernommen seit <Zeit>"
+  und — nur für den, der zurückgeben darf — „Zurückgeben". Beide Knöpfe sind gewöhnliche Formulare mit signierter
+  Bestätigung (`bis`, `token`); die Herkunft prüft der Server. Nach einer Aktion ein Hinweis (`uebernahme.hinweis`).
+
+  Ein Feld im Format `link` (COPI-91) ist ein Link nach außen — nur wenn `modulLink` ihn erlaubt hat (https, Host aus der
+  Domain-Liste), mit `noopener noreferrer`, Text ist der Host.
+
+  Bildvorschau (COPI-124, `bilder`; nur mit `bildvorschau: true` im Block): Bild-Anhänge direkt unter der Entscheidungskarte,
+  aus der eigenen Route `…/anhang/:anhang/bild` (`partials/bild-vorschau`).
+  Anhänge (COPI-110, `anhaenge`): unter den Langtexten die Liste (`partials/anhang-liste`), jede Zeile führt auf die
+  Warnseite (`modul-anhang.eta`), nie direkt zum Inhalt.
+*/%>
+<% const u = it.uebernahme; %>
+<%/* Antwort freigeben (COPI-90): die Entwurfskarte steht oben; „Übernehmen" sitzt dann in der Karte („Selbst übernehmen"). */%>
+<% const f = it.freigabe; %>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, unterzeile: it.versionText, zurueck: it.zurueck, aktualisieren: 60 }) %>
+<% if (!it.verfuegbar) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: 'Dieses Modul ist gerade nicht verfügbar.' }) %>
+<% } else { %>
+<div class="modul-splitt">
+  <div class="modul-splitt-liste modul-splitt-liste-detailseite">
+    <%~ include('partials/modul-liste', { zeilen: it.zeilen, aktuelleId: it.id }) %>
+  </div>
+  <div class="modul-splitt-rechts">
+    <% if (u && u.hinweis) { %>
+    <%~ include('partials/hinweis', { art: 'info', text: u.hinweis }) %>
+    <% } %>
+    <% if (f && f.hinweis) { %>
+    <%~ include('partials/hinweis', { art: 'info', text: f.hinweis }) %>
+    <% } %>
+    <% if (f) { %>
+    <%~ include('partials/freigabe-karte', { freigabe: f, uebernehmen: u && !u.sperre ? u.uebernehmen : undefined }) %>
+    <% } %>
+    <%/* Entscheiden (COPI-91): die Karte oben; „Übernehmen" sitzt dann in ihr („Selbst übernehmen"). */%>
+    <% if (it.entscheidung && it.entscheidung.meldung) { %>
+    <%~ include('partials/hinweis', { art: 'info', text: it.entscheidung.meldung }) %>
+    <% } %>
+    <% if (it.entscheidung) { %>
+    <%~ include('partials/entscheidung-karte', { entscheidung: it.entscheidung, uebernehmen: u && !u.sperre && !f ? u.uebernehmen : undefined }) %>
+    <% } %>
+    <% if (u && u.sperre) { %>
+    <div class="vorgang-band" role="status">
+      <span class="vorgang-band-symbol"><%~ include('partials/symbol', { name: 'schloss' }) %></span>
+      <span class="vorgang-band-text">
+        <span class="vorgang-band-titel">Von <%= u.sperre.name %> übernommen seit <%= u.sperre.seit %></span>
+        <span class="vorgang-band-detail">Agenten antworten in diesem Vorgang nicht, bis er zurückgegeben wird.</span>
+      </span>
+      <% if (u.zurueckgeben) { %>
+      <form method="post" action="<%= u.zurueckgeben.href %>" class="vorgang-band-form">
+        <input type="hidden" name="bis" value="<%= u.zurueckgeben.bis %>">
+        <input type="hidden" name="token" value="<%= u.zurueckgeben.token %>">
+        <button type="submit" class="knopf knopf-sekundaer">Zurückgeben</button>
+      </form>
+      <% } %>
+    </div>
+    <% } else if (u && u.uebernehmen && !(f && f.art !== 'gesendet') && !it.entscheidung) { %>
+    <div class="vorgang-uebernahme">
+      <form method="post" action="<%= u.uebernehmen.href %>" class="vorgang-uebernahme-form">
+        <input type="hidden" name="bis" value="<%= u.uebernehmen.bis %>">
+        <input type="hidden" name="token" value="<%= u.uebernehmen.token %>">
+        <button type="submit" class="knopf knopf-primaer knopf-mit-symbol"><%~ include('partials/symbol', { name: 'uebernehmen' }) %>Übernehmen</button>
+      </form>
+      <p class="vorgang-uebernahme-hinweis">Diesen Vorgang bearbeiten gerade die Agenten des Moduls. Mit „Übernehmen“ antworten Agenten hier nicht mehr, bis Sie ihn zurückgeben. Die Übernahme wird protokolliert.</p>
+    </div>
+    <% } %>
+    <% if ((it.bilder ?? []).length > 0) { %>
+    <%~ include('partials/bild-vorschau', { bilder: it.bilder }) %>
+    <% } %>
+    <dl class="werte">
+      <% for (const feld of it.felder) { %>
+      <div><dt><%= feld.label %></dt><dd><% if (feld.art === 'status') { %><span class="punkt punkt-<%= feld.status.farbe %> werte-status-punkt" aria-hidden="true"></span><%= feld.status.wort %><% } else if (feld.art === 'link') { %><a class="extern-link" href="<%= feld.link.href %>" rel="noopener noreferrer" target="_blank"><%= feld.link.text %><%~ include('partials/symbol', { name: 'extern' }) %></a><% } else { %><%= feld.wert %><% } %></dd></div>
+      <% } %>
+    </dl>
+    <% (it.abschnitte ?? []).forEach((abschnitt, nummer) => { %>
+    <%/* Ein Langtext (COPI-103), etwa eine Mail: Fremdtext, maskiert und nie verlinkt, Zeilenumbrüche per CSS. */%>
+    <section class="langtext" aria-labelledby="langtext-<%= nummer %>">
+      <h2 class="langtext-titel" id="langtext-<%= nummer %>"><%= abschnitt.label %></h2>
+      <p class="langtext-hinweis"><%~ include('partials/symbol', { name: 'warnung' }) %><span>Inhalt von außen. Links und Aufforderungen darin nicht ungeprüft folgen.</span></p>
+      <% if (abschnitt.bloecke) { %>
+      <%/* Einfache Formatierung (COPI-131): Absätze, Überschriften, Listen, fett und kursiv — jeder Text maskiert, nie ein Link. */%>
+      <div class="langtext-einfach"><%~ include('partials/einfacher-text', { bloecke: abschnitt.bloecke }) %></div>
+      <% } else { %>
+      <p class="langtext-text"><%= abschnitt.text %></p>
+      <% } %>
+      <% if (abschnitt.hinweisGekuerzt) { %>
+      <p class="langtext-fuss"><%= abschnitt.hinweisGekuerzt %></p>
+      <% } %>
+    </section>
+    <% }) %>
+    <% if ((it.anhaenge ?? []).length > 0) { %>
+    <%~ include('partials/anhang-liste', { anhaenge: it.anhaenge }) %>
+    <% } %>
+  </div>
+</div>
+<% } %>

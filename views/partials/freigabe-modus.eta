@@ -1,0 +1,35 @@
+<%/*
+  Freigabe von Updates (COPI-141) im Abschnitt Versionen, nur für den Betreuer: je Bereich (Cockpit, Module) der geltende
+  Modus und ein Formular zum Umschalten. Angaben: `freigabe` mit `hinweis` (`art`, `text`), `modi` (`wert`, `text`) und
+  `bereiche` (je `bereich`, `name`, `modus`, `text`, `herkunft`, `fenster` — beim Cockpit im Modus automatisch das geltende Wartungsfenster, COPI-235). Auf „Direkt installieren" folgt eine Bestätigungsseite.
+*/%>
+<% const fg = it.freigabe %>
+<div class="bereich freigabe-modus">
+  <div class="bereich-kopf">
+    <h3 id="freigabe-titel" class="bereich-name">Freigabe von Updates</h3>
+  </div>
+  <% if (fg.hinweis) { %>
+  <%~ include('./hinweis', { art: fg.hinweis.art, text: fg.hinweis.text }) %>
+  <% } %>
+  <p class="bereich-satz">Mit Rückfrage wird jedes Update außerhalb des Cockpits in Slack freigegeben. Direkt: die Bestätigung hier ist die Freigabe, Slack meldet nur das Ergebnis. Automatisch: das Cockpit stellt den Antrag selbst, sobald ein Update gemeldet ist (das Cockpit im jeweils geltenden Wartungsfenster). Ein von Hand gewählter Stand wird immer in Slack bestätigt.</p>
+  <% for (const b of fg.bereiche) { %>
+  <form method="post" action="/einstellungen/freigabe" class="formular freigabe-zeile">
+    <input type="hidden" name="bereich" value="<%= b.bereich %>" />
+    <div class="feld">
+      <label for="freigabe-<%= b.bereich %>"><%= b.name %></label>
+      <select id="freigabe-<%= b.bereich %>" name="modus" class="eingabe"<% if (b.herkunft) { %> aria-describedby="freigabe-<%= b.bereich %>-hilfe"<% } %>>
+        <% for (const modus of fg.modi) { %>
+        <option value="<%= modus.wert %>"<% if (modus.wert === b.modus) { %> selected<% } %>><%= modus.text %></option>
+        <% } %>
+      </select>
+      <% if (b.fenster) { %>
+      <p class="hilfe">Wartungsfenster: <%= b.fenster %></p>
+      <% } %>
+      <% if (b.herkunft) { %>
+      <p class="hilfe" id="freigabe-<%= b.bereich %>-hilfe">Zuletzt geändert <%= b.herkunft %>.</p>
+      <% } %>
+    </div>
+    <div><%~ include('./knopf', { text: 'Speichern', art: 'sekundaer' }) %></div>
+  </form>
+  <% } %>
+</div>

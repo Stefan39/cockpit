@@ -1,0 +1,61 @@
+# Vorlage für einen eigenen Coolify-Service (COPI-87) — der Weg auf einen Server, auf dem die Agenten bereits als
+# Coolify-Service laufen (erster Einsatz: der eigene Server des Betreuers). Einzige Wahrheit für diesen Weg; der
+# Box-Weg mit eigenem Caddy steht in compose.fragment.yaml. Schritt für Schritt: docs/installation.md.
+#
+# Ersetzen: <DIGEST> (dreimal: zweimal image, einmal COCKPIT_IMAGE_DIGEST), <DOMAIN>, <STACK_NETZ> (die UUID des
+# Coolify-Service der Agenten = Name seines Docker-Netzes), <INSTANZNAME>, <ABSENDER>, <SMTP_HOST>. Die Werte in
+# ${…} legt man in Coolify als Umgebungsvariablen des Service an, nie hier.
+#
+# Warum ein eigener Service und nicht ein Dienst im Agenten-Stack: Ein Deploy des Stacks startet alle seine Dienste
+# neu (n8n, LiteLLM, Postgres …). Cockpit-Updates sollen die Agenten nie anhalten.
+
+services:
+  # Einmal je Deploy bzw. Neustart: bringt das Schema auf den Stand des Images und beendet sich (COPI-31).
+  # Das Cockpit selbst migriert weiterhin nie. Das Schema ändert sich nur mit einem neuen Digest, und den trägt
+  # ein Mensch (später `cockpit-update`) nach der Freigabe ein. Bei gleichem Image meldet es „nichts zu tun“.
+  cockpit-migrieren:
+    image: ghcr.io/stefan39/cockpit@<DIGEST>
+    command: ["node", "dist/cli/index.js", "migrieren"]
+    restart: "no"
+    # Coolify: ein beendeter Einmal-Dienst ist kein Fehlerzustand des Service.
+    exclude_from_hc: true
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${COCKPIT_DATABASE_URL}
+    networks:
+      - agenten
+
+  cockpit:
+    image: ghcr.io/stefan39/cockpit@<DIGEST>
+    restart: unless-stopped
+    depends_on:
+      cockpit-migrieren:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      COCKPIT_DOMAIN: <DOMAIN>
+      DATABASE_URL: ${COCKPIT_DATABASE_URL}
+      BETTER_AUTH_SECRET: ${COCKPIT_AUTH_SECRET}
+      # mailcow direkt auf 587 mit STARTTLS (installation.md, „SMTP nur mit TLS“).
+      SMTP_HOST: <SMTP_HOST>
+      SMTP_PORT: "587"
+      SMTP_USER: <ABSENDER>
+      SMTP_PASS: ${COCKPIT_SMTP_PASS}
+      SMTP_FROM: <ABSENDER>
+      COCKPIT_IMAGE_DIGEST: <DIGEST>
+      COCKPIT_INSTANZ_NAME: <INSTANZNAME>
+      COCKPIT_VAPID_PUBLIC_KEY: ${COCKPIT_VAPID_PUBLIC_KEY}
+      COCKPIT_VAPID_PRIVATE_KEY: ${COCKPIT_VAPID_PRIVATE_KEY}
+      COCKPIT_VAPID_KONTAKT: mailto:<ABSENDER>
+    # Kein `ports`-Eintrag: Traefik (coolify-proxy) erreicht den Dienst über das Netz des Service.
+    networks:
+      - agenten
+
+# Das Netz des Agenten-Stacks: dort heißen Postgres `postgres` und n8n `n8n`. Fest deklariert, damit es jeden Deploy
+# übersteht (ein von Hand angehängtes Netz überlebt keinen). Nie das Netz `coolify`: dort heißt Coolifys eigene
+# Datenbank ebenfalls `postgres`.
+networks:
+  agenten:
+    external: true
+    name: <STACK_NETZ>

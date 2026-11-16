@@ -1,0 +1,65 @@
+name: Release-PR
+
+# Der Release-PR entsteht von selbst (COPI-236, ADR COPI-211 Teil A). Nach jedem Merge auf main legt dieser Workflow
+# den PR `release: X.Y.Z` an (Minor-Sprung gegenüber dem letzten Tag), oder er aktualisiert dessen Text, wenn schon
+# einer offen ist. Stefan gibt ihn frei und merged ihn; erst der Merge veröffentlicht (release.yaml). Tags setzt auch
+# dieser Workflow nie.
+#
+# Die Entscheidung, ob etwas zu tun ist, steht in .github/scripts/release-pr.sh (geprüft in test/release-pr.test.ts).
+# Der Release-PR wird per Merge-Commit gemergt, sein Betreff beginnt also nicht mit "release: ". Darum bremst vor
+# allem die Version: steht in package.json eine Version ohne Tag, läuft ein Release, und es entsteht kein weiterer PR.
+#
+# Token: Installations-Token der GitHub App jacomeit-dev, nie das GITHUB_TOKEN. Pushes und PRs mit dem GITHUB_TOKEN
+# lösen keine Workflows aus, die Pflicht-Checks am Release-PR blieben aus. Die Secrets setzt Stefan im Repo:
+# JACOMEIT_DEV_CLIENT_ID (Client-ID der App) und JACOMEIT_DEV_APP_PRIVATE_KEY (der Schlüssel, komplett).
+#
+# Läuft wie die CI über CI_RUNS_ON auf dem Runner der devbox (JAC-770), ohne node: das Skript braucht nur git, curl,
+# sed und awk.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Zwei Merges kurz hintereinander würden sich um denselben Release-PR streiten.
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+
+jobs:
+  release-pr:
+    name: Release-PR anlegen oder aktualisieren
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    steps:
+      - name: Zugang der App vorhanden
+        env:
+          CLIENT_ID: ${{ secrets.JACOMEIT_DEV_CLIENT_ID }}
+          SCHLUESSEL: ${{ secrets.JACOMEIT_DEV_APP_PRIVATE_KEY }}
+        run: |
+          test -n "$CLIENT_ID" && test -n "$SCHLUESSEL" || {
+            echo "Secret JACOMEIT_DEV_CLIENT_ID oder JACOMEIT_DEV_APP_PRIVATE_KEY fehlt (siehe README, Abschnitt Release)" >&2
+            exit 1
+          }
+
+      - name: Token der App jacomeit-dev erzeugen
+        id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.JACOMEIT_DEV_CLIENT_ID }}
+          private-key: ${{ secrets.JACOMEIT_DEV_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      # Alle Tags und Zweige, damit das Skript den letzten Tag und einen offenen Release-Zweig findet. Die Pushes
+      # laufen mit dem Token der App.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Release-PR anlegen oder aktualisieren
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: sh .github/scripts/release-pr.sh anwenden

@@ -1,0 +1,28 @@
+<%/*
+  „Letzte Meldungen" der Übersicht (COPI-43), geteilt vom bisherigen Bild und vom Dashboard (COPI-81). Angaben:
+  `meldungen` (aus `meldungenAnsicht`, höchstens drei), optional `leer` (Text, wenn es keine gibt — ohne ihn entfällt
+  der Abschnitt dann ganz, wie bisher).
+*/%>
+<% if (it.meldungen.length > 0 || it.leer) { %>
+<section class="grid content-start gap-2.5" aria-labelledby="letzte-meldungen">
+  <div class="abschnitt-zeile">
+    <h2 id="letzte-meldungen">Letzte Meldungen</h2>
+    <a href="/meldungen" class="abschnitt-link">Alle<span class="lg:hidden"> ansehen</span></a>
+  </div>
+  <% if (it.meldungen.length === 0) { %>
+  <p class="letzte letzte-leer"><%= it.leer %></p>
+  <% } else { %>
+  <ul class="letzte">
+    <% for (const meldung of it.meldungen) { %>
+    <li class="letzte-zeile">
+      <span class="punkt punkt-<%= meldung.farbe %> letzte-punkt" aria-hidden="true"></span>
+      <div class="min-w-0">
+        <p class="letzte-titel"><%= meldung.titel %></p>
+        <p class="letzte-zeit"><%= meldung.zeit %></p>
+      </div>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+</section>
+<% } %>

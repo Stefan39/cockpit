@@ -1,0 +1,23 @@
+<%/*
+  Die Anhänge einer Modulzeile (COPI-110, freigegebener Entwurf „Anhänge"): unter dem Mailtext, Abschnitt wie ein
+  Langtext. Angabe: `anhaenge` (aus `anhangZeileAnsicht`). Je Zeile Symbol, Name, Art und Größe, bei Warnung, Sperre und
+  „liegt im Postfach" der Grund in der zweiten Zeile — farbig und als Text, die Klasse hängt nie nur an der Farbe. Am
+  Desktop zusätzlich eine Marke. Nur normale und gewarnte Anhänge sind Links, und zwar auf die Warnseite, nie direkt auf
+  den Inhalt. Der Name ist Fremdtext: maskiert, nie verlinkt außer auf die eigene Warnseite.
+*/%>
+<section class="langtext anhaenge" id="anhaenge" aria-labelledby="anhaenge-titel">
+  <h2 class="langtext-titel" id="anhaenge-titel">Anhänge · <%= it.anhaenge.length %></h2>
+  <p class="langtext-hinweis"><%~ include('./symbol', { name: 'warnung' }) %><span>Dateien von außen. Herunterladen erst nach einer Bestätigung, jeder Download wird protokolliert.</span></p>
+  <ul class="anhang-liste">
+    <% for (const anhang of it.anhaenge) { %>
+    <% const innen = include('./anhang-zeile', { anhang }); %>
+    <li>
+      <% if (anhang.href) { %>
+      <a class="anhang anhang-<%= anhang.klasse %>" href="<%= anhang.href %>"><%~ innen %><span class="anhang-aktion" aria-hidden="true"><%~ include('./symbol', { name: 'herunterladen' }) %></span></a>
+      <% } else { %>
+      <div class="anhang anhang-<%= anhang.klasse %>"><%~ innen %></div>
+      <% } %>
+    </li>
+    <% } %>
+  </ul>
+</section>

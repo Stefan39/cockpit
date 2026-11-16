@@ -1,0 +1,26 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Übersicht der Module (COPI-78): jedes für die Rolle sichtbare aktive Modul, mit seinem Menünamen. Aufgebaut
+  wie „Mehr": Symbol, Text, Pfeil. Ist genau eines sichtbar, zeigt die Seite trotzdem diese Liste (kein
+  Weiterleiten) — die Adresse bleibt dieselbe, auch wenn später ein zweites Modul dazukommt. Angabe: `module`
+  (aus `moduleAnsicht`); je Zeile gedämpft die aktive Version (COPI-84).
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad }) %>
+<% if (it.module.length === 0) { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch keine Module', detail: 'Sobald ein Modul für Sie freigegeben ist, erscheint es hier.' } }) %>
+<% } else { %>
+<ul class="liste">
+  <% for (const modul of it.module) { %>
+  <li>
+    <a href="/module/<%= modul.kennung %>" class="liste-zeile">
+      <span class="liste-symbol"><%~ include('partials/symbol', { name: 'module' }) %></span>
+      <span class="liste-text">
+        <span class="meldungen-titel"><%= modul.menuename %></span>
+        <span class="meldungen-meta">Version <%= modul.version %></span>
+      </span>
+      <span class="liste-weiter"><%~ include('partials/symbol', { name: 'weiter' }) %></span>
+    </a>
+  </li>
+  <% } %>
+</ul>
+<% } %>

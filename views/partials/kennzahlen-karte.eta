@@ -1,0 +1,28 @@
+<%/*
+  Die Karte eines Kennzahlen-Moduls auf der Übersicht (COPI-98, freigegebener Entwurf): Kürzel, „Kosten im September",
+  groß der Wert des laufenden Monats, rechts der Vormonat, darunter die letzten 30 Tage als Balken mit Datumsachse. Mit einem Hinweis
+  des Moduls ist die Karte gelb, trägt die Pille „Achtung" (Punkt + Wort, nie nur Farbe) und nennt ihn. Die ganze
+  Karte ist ein Link aufs Modul. Dieselben Bausteine wie die Karten der Dienste (`.dienst*`, `.messwert*`). Moduldaten
+  kommen aus einer Fach-View: alles wird escaped, nichts verlinkt. Angaben: `karte` (aus `kennzahlenKarte`), `stand`.
+*/%>
+<% const k = it.karte; %>
+<a href="<%= k.href %>" class="dienst<% if (k.warnung) { %> dienst-gelb<% } %>">
+  <span class="dienst-kopf">
+    <%~ include('./dienst-kuerzel', { kuerzel: k.kuerzel, farbe: k.warnung ? 'gelb' : 'unbekannt' }) %>
+    <span class="dienst-titel"><%= k.ueberschrift %></span>
+    <% if (k.warnung) { %><span class="pille pille-gelb"><span class="punkt punkt-gelb" aria-hidden="true"></span>Achtung</span><% } %>
+  </span>
+  <span class="messwert">
+    <span class="messwert-zeile">
+      <span class="messwert-wert kennzahl-karte-wert"><%= k.wert %></span>
+      <% if (k.bezug) { %><span class="messwert-bezug"><%= k.bezug %></span><% } %>
+    </span>
+  </span>
+  <% if (k.diagramm) { %>
+  <%~ include('./balken-diagramm', { diagramm: k.diagramm, kurz: true }) %>
+  <% } %>
+  <% if (k.warnung) { %>
+  <span class="dienst-text"><%= k.warnung %></span>
+  <% } %>
+  <span class="dienst-zeit">Stand: <%= it.stand %></span>
+</a>

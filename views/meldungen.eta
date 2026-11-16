@@ -1,0 +1,44 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Meldungen (COPI-43), wie der Bildschirm „Meldungen" des Prototyps: Suche, Filter, Liste. Angaben: `filter`
+  (`suche`, `artWert`), `chips` (Links, die die Suche mitnehmen), `gefiltert`, `meldungen` (aus `meldungenAnsicht`).
+  Alles wird escaped, nichts verlinkt: der Text kommt vom Admin-Agenten.
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, stand: it.stand, aktualisieren: 60 }) %>
+<div class="meldungen-seite">
+  <div class="meldungen-filter">
+    <form method="get" action="/meldungen" class="suche" role="search">
+      <%~ include('partials/symbol', { name: 'suche' }) %>
+      <label for="suche" class="sr-only">Meldungen durchsuchen</label>
+      <input id="suche" type="search" name="q" value="<%= it.filter.suche ?? '' %>" placeholder="Suchen" maxlength="100" class="suche-feld" />
+      <% if (it.filter.artWert !== '') { %>
+      <input type="hidden" name="art" value="<%= it.filter.artWert %>" />
+      <% } %>
+      <button type="submit" class="sr-only">Suchen</button>
+    </form>
+    <nav class="chips" aria-label="Filter">
+      <% for (const chip of it.chips) { %>
+      <a href="<%= chip.href %>" class="chip"<% if (chip.aktuell) { %> aria-current="true"<% } %>><%= chip.text %></a>
+      <% } %>
+    </nav>
+  </div>
+  <% if (it.meldungen.length === 0) { %>
+  <% if (it.gefiltert) { %>
+  <%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Keine passenden Meldungen', detail: 'Zu dieser Suche oder diesem Filter gibt es nichts.' } }) %>
+  <% } else { %>
+  <%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch keine Meldungen', detail: 'Sobald sich im Betrieb etwas ändert, steht es hier.' } }) %>
+  <% } %>
+  <% } else { %>
+  <ul class="meldungen-liste">
+    <% for (const meldung of it.meldungen) { %>
+    <li class="meldungen-zeile">
+      <span class="meldungen-symbol meldungen-symbol-<%= meldung.farbe %>"><%~ include('partials/symbol', { name: meldung.farbe === 'gruen' ? 'ok' : 'warnung' }) %></span>
+      <div class="min-w-0">
+        <p class="meldungen-titel"><%= meldung.titel %></p>
+        <p class="meldungen-meta"><%= meldung.meta %><% if (meldung.intern) { %> <span class="marke">nur intern</span><% } %></p>
+      </div>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+</div>

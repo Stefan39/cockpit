@@ -1,0 +1,16 @@
+<% layout('layout') %>
+<h1>Zugang einrichten</h1>
+<p>
+  Der Zugang wird für <%= it.email %> angelegt; diese Adresse ist
+  zugleich der Anmeldename.
+</p>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<form method="post" action="/einladung/<%= it.token %>" class="formular">
+  <%~ include('partials/feld', { id: 'name', name: 'name', label: 'Name', wert: it.name, autocomplete: 'name' }) %>
+  <%~ include('partials/feld', { id: 'passwort', name: 'passwort', typ: 'password', label: `Passwort (mindestens ${it.mindestlaenge} Zeichen)`, minlength: it.mindestlaenge, autocomplete: 'new-password' }) %>
+  <%~ include('partials/feld', { id: 'passwortWiederholung', name: 'passwortWiederholung', typ: 'password', label: 'Passwort wiederholen', minlength: it.mindestlaenge, autocomplete: 'new-password' }) %>
+  <%~ include('partials/knopf', { text: 'Zugang anlegen' }) %>
+</form>
+<p>Im nächsten Schritt wird der zweite Faktor (TOTP) eingerichtet.</p>

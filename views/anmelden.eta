@@ -1,0 +1,10 @@
+<% layout('layout') %>
+<h1>Anmelden</h1>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<form method="post" action="/anmelden" class="formular">
+  <%~ include('partials/feld', { id: 'email', name: 'email', typ: 'email', label: 'E-Mail-Adresse', autocomplete: 'username' }) %>
+  <%~ include('partials/feld', { id: 'passwort', name: 'passwort', typ: 'password', label: 'Passwort', autocomplete: 'current-password' }) %>
+  <%~ include('partials/knopf', { text: 'Weiter' }) %>
+</form>

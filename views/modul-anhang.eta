@@ -1,0 +1,69 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Seite vor dem Download eines Anhangs (COPI-110, freigegebener Entwurf „Anhänge"). Angaben: `titel`, `instanz`,
+  `unterzeile` (Modul · Vorgang), `zurueck` (die Detailseite), `hinweis` (rot, etwa nach einer abgelaufenen
+  Bestätigung), `datei` (`name`, `meta`, `klasse`, `symbol`), `werte` (Typ laut Absender, SHA-256), `stark` (Überschrift
+  und Satz der starken Warnung), `formular` (`action`, `bis`, `token`, `sha256`; nur, wenn die Datei ladbar ist).
+
+  Drei Fälle: normal (Hinweis und „Herunterladen"), Warnung (rote Warnung, Pflicht-Haken, „Abbrechen" ist der primäre
+  Knopf) und gesperrt bzw. „liegt im Postfach" (kein Formular, kein Weg zum Inhalt). Der Dateiname ist Fremdtext.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, unterzeile: it.unterzeile, zurueck: it.zurueck }) %>
+<% if (it.hinweis) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.hinweis }) %>
+<% } %>
+<section class="bereich" aria-labelledby="datei-titel">
+  <h2 id="datei-titel" class="bereich-name">Datei</h2>
+  <div class="datei-karte">
+    <span class="anhang-symbol anhang-symbol-<%= it.datei.klasse %>"><%~ include('partials/symbol', { name: it.datei.symbol }) %></span>
+    <span class="anhang-text">
+      <span class="anhang-name"><%= it.datei.name %></span>
+      <span class="anhang-meta"><%= it.datei.meta %></span>
+    </span>
+  </div>
+  <% if (it.werte.length > 0) { %>
+  <dl class="werte datei-werte">
+    <% for (const wert of it.werte) { %>
+    <div><dt><%= wert.label %></dt><% if (wert.code) { %><dd class="digest-wert"><code class="digest-voll"><%= wert.wert %></code></dd><% } else { %><dd><%= wert.wert %></dd><% } %></div>
+    <% } %>
+  </dl>
+  <% } %>
+  <% if (it.datei.klasse === 'gesperrt') { %>
+  <%~ include('partials/hinweis', { art: 'fehler', text: 'Diese Datei ist gesperrt: Sie ist ein ausführbares Programm. Das Cockpit liefert sie nicht aus, auch nicht nach einer Bestätigung. Die Mail mit dem Anhang liegt weiter im Postfach. Rechnungen und Angebote kommen nie als Programm: Im Zweifel den Absender über einen bekannten Weg anrufen.' }) %>
+  <% } else if (it.datei.klasse === 'postfach') { %>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Der Inhalt dieser Datei liegt nicht im Cockpit, nur im Postfach — weil sie zu groß ist oder ihre Aufbewahrungsfrist abgelaufen ist.' }) %>
+  <% } else if (it.stark) { %>
+  <div class="warn-stark" role="alert">
+    <span class="warn-stark-symbol"><%~ include('partials/symbol', { name: 'warnung' }) %></span>
+    <div>
+      <p class="warn-stark-titel"><%= it.stark.titel %></p>
+      <p class="warn-stark-text"><%= it.stark.text %></p>
+    </div>
+  </div>
+  <% } else { %>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Die Datei kommt von außen, das Cockpit prüft sie nicht auf Schadsoftware. Öffnen Sie sie nur, wenn Sie sie erwartet haben. Der Download wird mit Ihrem Namen protokolliert.' }) %>
+  <% } %>
+  <% if (it.formular) { %>
+  <form method="post" action="<%= it.formular.action %>" class="warn-form">
+    <input type="hidden" name="bis" value="<%= it.formular.bis %>">
+    <input type="hidden" name="token" value="<%= it.formular.token %>">
+    <input type="hidden" name="sha256" value="<%= it.formular.sha256 %>">
+    <% if (it.stark) { %>
+    <label class="warn-bestaetigen" for="erwartet"><input type="checkbox" id="erwartet" name="erwartet" value="ja" required><span>Ich habe mit dem Absender geklärt, dass diese Datei erwartet ist. Der Download wird mit meinem Namen protokolliert.</span></label>
+    <div class="knopf-reihe">
+      <button type="submit" class="knopf knopf-sekundaer knopf-gefahr knopf-mit-symbol"><%~ include('partials/symbol', { name: 'herunterladen' }) %>Trotzdem herunterladen</button>
+      <a href="<%= it.zurueck.href %>" class="knopf knopf-primaer">Abbrechen</a>
+    </div>
+    <% } else { %>
+    <div class="knopf-reihe">
+      <button type="submit" class="knopf knopf-primaer knopf-mit-symbol"><%~ include('partials/symbol', { name: 'herunterladen' }) %>Herunterladen</button>
+      <a href="<%= it.zurueck.href %>" class="knopf knopf-sekundaer">Abbrechen</a>
+    </div>
+    <% } %>
+  </form>
+  <% } else { %>
+  <div class="knopf-reihe"><a href="<%= it.zurueck.href %>" class="knopf knopf-sekundaer">Zurück zum Vorgang</a></div>
+  <% } %>
+</section>
+</div>

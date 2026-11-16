@@ -1,0 +1,13 @@
+<% layout('layout') %>
+<%/*
+  Eine neue E-Mail-Adresse bestätigen (COPI-47), ohne Anmeldung: der Link aus der Mail. Angaben: `token`, `email` (die
+  neue Adresse), optional `fehler`. Erst der Knopf ändert etwas — Mailprogramme öffnen Links oft von selbst.
+*/%>
+<h1>E-Mail-Adresse bestätigen</h1>
+<p>Ab der Bestätigung gilt für Ihren Zugang zum Cockpit die Adresse <strong><%= it.email %></strong>; mit ihr melden Sie sich dann an. Passwort und zweiter Faktor bleiben, wie sie sind.</p>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<form method="post" action="/email-bestaetigen/<%= it.token %>" class="formular">
+  <%~ include('partials/knopf', { text: 'Adresse bestätigen' }) %>
+</form>

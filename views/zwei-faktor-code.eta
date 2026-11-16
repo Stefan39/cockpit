@@ -1,0 +1,35 @@
+<% layout('layout') %>
+<h1>Zweiten Faktor bestätigen</h1>
+<p>Diesen QR-Code mit der Authenticator-App scannen:</p>
+<%/* Weißer Grund auch im Dunkelmodus: Scanner brauchen dunkel auf hell. */%>
+<div class="qr">
+  <%~ it.qrSvg %>
+</div>
+
+<%/* Für den Fall, dass Cockpit und Authenticator-App auf demselben Gerät
+     laufen (COPI-16): schreibgeschützt, ohne `name` und außerhalb des
+     Formulars, damit der Wert mit keinem Formular abgeschickt wird. */%>
+<section class="abschnitt">
+  <p>Scannen nicht möglich, etwa weil die App auf diesem Gerät läuft? Dann
+     den Einrichtungsschlüssel kopieren und in der App manuell eintragen:</p>
+  <%~ include('partials/feld', { id: 'einrichtungsschluessel', label: 'Einrichtungsschlüssel', wert: it.geheimnis, nurLesen: true, autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', mono: true }) %>
+  <%~ include('partials/feld', { id: 'einrichtungsadresse', label: 'Vollständige Einrichtungs-Adresse (für Passwortmanager)', wert: it.totpUri, nurLesen: true, autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', mono: true }) %>
+</section>
+
+<%/* Auf `/sicherheit` (COPI-94) ohne Ersatzcodes: die bisherigen gelten dort weiter. */%>
+<% if (it.ersatzcodes.length > 0) { %>
+<section class="abschnitt">
+  <h2>Ersatzcodes</h2>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Werden nur einmal angezeigt — bitte jetzt sicher notieren:' }) %>
+  <ul class="codes">
+    <% for (const code of it.ersatzcodes) { %>
+    <li><code><%= code %></code></li>
+    <% } %>
+  </ul>
+</section>
+<% } %>
+
+<form method="post" action="<%= it.aktion ?? '/zwei-faktor/pruefen' %>" class="abschnitt formular">
+  <%~ include('partials/feld', { id: 'code', name: 'code', label: 'Code aus der App', inputmode: 'numeric', autocomplete: 'one-time-code' }) %>
+  <%~ include('partials/knopf', { text: 'Einrichtung abschließen' }) %>
+</form>

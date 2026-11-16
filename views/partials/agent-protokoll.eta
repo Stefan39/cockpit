@@ -1,0 +1,23 @@
+<%/*
+  Die Zeitleiste der Detailseite eines Agenten (COPI-113): je Ereignis ein Symbol in der Farbe seiner Art, Titel, Zeit,
+  Text und Herkunft; mit Ziel ist die ganze Zeile ein Link. Angaben: `zeilen` (aus `protokollAnsicht`), `leer` (Satz ohne
+  Einträge). Texte kommen aus Chat, Fach-View und Befunden: escaped, nie verlinkt (JAC-577).
+*/%>
+<% if (it.zeilen.length === 0) { %>
+<p class="agent-leer agent-karte-leer"><%= it.leer %></p>
+<% } else { %>
+<ul class="agent-protokoll">
+  <% for (const zeile of it.zeilen) { %>
+  <li>
+    <% if (zeile.href) { %><a href="<%= zeile.href %>" class="agent-ereignis"><% } else { %><div class="agent-ereignis"><% } %>
+      <span class="agent-ereignis-symbol agent-ton-<%= zeile.ton %>"><%~ include('./symbol', { name: zeile.symbol }) %></span>
+      <span class="agent-ereignis-text">
+        <span class="agent-ereignis-kopf"><span class="agent-ereignis-titel"><%= zeile.titel %></span><span class="agent-ereignis-zeit"><%= zeile.zeit %></span></span>
+        <span class="agent-ereignis-inhalt"><%= zeile.text %></span>
+        <span class="agent-ereignis-typ"><%= zeile.typ %></span>
+      </span>
+    <% if (zeile.href) { %></a><% } else { %></div><% } %>
+  </li>
+  <% } %>
+</ul>
+<% } %>

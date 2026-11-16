@@ -1,0 +1,50 @@
+# Lokaler Dev-Stack für Cockpit — Postgres + Mailpit (SMTP-Tests).
+#
+# Starten:  npm run dev:stack        (erzeugt vorher das Dev-Zertifikat)
+# Beenden:  npm run dev:stack:down   (Daten bleiben)
+#           docker compose -f docker/compose.dev.yaml down -v    (Daten löschen)
+#
+# Mailpit-Weboberfläche: http://localhost:8025 — SMTP: localhost:1025 (STARTTLS)
+#
+# Alle Ports sind nur an 127.0.0.1 gebunden: Postgres läuft hier mit dem
+# Wegwerf-Passwort „dev" und darf nicht im lokalen Netz erreichbar sein.
+#
+# Bewusst kein `restart: unless-stopped` (COPI-33): der Stack ist eine
+# bewusst gestartete Dev-Session, kein Dauerdienst. Mit `unless-stopped`
+# startet Docker Desktop Postgres/Mailpit bei jedem Neustart automatisch
+# wieder mit und blockiert Port 5432 dauerhaft — das kollidiert mit anderen
+# lokalen Projekten (z. B. einer lokalen Webanwendung), die denselben Port binden.
+
+name: cockpit-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine  # wie in der CI (.github/workflows/ci.yaml)
+    environment:
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: cockpit
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - cockpit_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "cockpit"]
+      interval: 2s
+      timeout: 1s
+      retries: 15
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:1025:1025"  # SMTP (STARTTLS)
+      - "127.0.0.1:8025:8025"  # Weboberfläche
+    environment:
+      # Ohne Zertifikat bietet Mailpit kein STARTTLS an, und der Mailversand
+      # des Cockpits erzwingt es. Das Zertifikat erzeugt docker/dev-certs.sh.
+      MP_SMTP_TLS_CERT: /certs/cert.pem
+      MP_SMTP_TLS_KEY: /certs/key.pem
+    volumes:
+      - ./dev-certs:/certs:ro
+
+volumes:
+  cockpit_postgres_data:

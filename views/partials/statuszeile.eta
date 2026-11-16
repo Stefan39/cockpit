@@ -1,0 +1,32 @@
+<%/*
+  Die Statuszeile des Dashboards (COPI-122, ersetzt das hohe Zustandsband aus COPI-81): eine Zeile in der Zustandsfarbe
+  mit Satz und Kurzfassung, aufklappbar (`<details>`, ohne Skript) mit jedem offenen Punkt einzeln; „Jetzt ansehen"
+  steht daneben, nicht in der Zusammenfassung (ein Link in `<summary>` klappte sonst mit auf). Die Farbe steht nie
+  allein: Satz und Wort je Punkt sagen, was los ist. Alles wird escaped. Angabe: `zustand` (aus `dashboardAnsicht`).
+*/%>
+<% const z = it.zustand; const knopf = z.farbe === 'rot' || z.farbe === 'gelb'; %>
+<section class="statuszeile statuszeile-<%= z.farbe %>" aria-labelledby="status-satz">
+  <details class="statuszeile-details">
+    <summary class="statuszeile-kopf">
+      <span class="statuszeile-symbol" aria-hidden="true"><%~ include('./symbol', { name: knopf ? 'warnung' : z.farbe === 'gruen' ? 'haken' : 'uhr' }) %></span>
+      <span id="status-satz" class="statuszeile-satz"><%= z.satz %></span>
+      <span class="statuszeile-kurz"><%= z.detail %></span>
+      <span class="aufklapp-pfeil">Details</span>
+    </summary>
+    <% if (z.punkte.length > 0) { %>
+    <ul class="statuszeile-liste">
+      <% for (const punkt of z.punkte) { %>
+      <li>
+        <span class="punkt punkt-<%= punkt.wertung %>" aria-hidden="true"></span>
+        <a href="<%= punkt.href %>" class="statuszeile-punkt"><span class="statuszeile-titel"><%= punkt.titel %></span> · <%= punkt.wort %><% if (punkt.text !== '') { %>: <%= punkt.text %><% } %></a>
+      </li>
+      <% } %>
+    </ul>
+    <% } else { %>
+    <p class="statuszeile-leer"><%= z.detail %></p>
+    <% } %>
+  </details>
+  <% if (knopf) { %>
+  <a href="<%= z.ziel ?? '/meldungen' %>" class="status-aktion status-aktion-<%= z.farbe %> statuszeile-aktion">Jetzt ansehen</a>
+  <% } %>
+</section>

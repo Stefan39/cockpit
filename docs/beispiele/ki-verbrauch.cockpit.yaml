@@ -1,0 +1,28 @@
+# Modul „KI-Verbrauch" (COPI-98): der Modul-Block zu den Views `docs/beispiele/v_modul_ki_verbrauch.sql` und
+# `docs/beispiele/v_modul_ki_verbrauch_hinweise.sql`. Ansichtstyp `kennzahlen`: Kosten, Tokens und Einsätze je
+# Zeitraum, aufgeteilt nach Projekt (gefiltert: nach Ticket), Modell und Quelle. `uebersicht:` meldet die Karte mit
+# den Kosten des laufenden Monats und den letzten 30 Tagen an.
+cockpit:
+  kennung: ki-verbrauch
+  art: betrieb
+  menuename: "KI-Verbrauch"
+  ansicht: kennzahlen
+  view: v_modul_ki_verbrauch
+  spalten:
+    - { name: wert, label: "Kosten", format: euro }
+    - { name: tokens, label: "Tokens", format: zahl, davon: { name: tokens_cache_lesen, text: "aus dem Cache gelesen" } }
+    - { name: einsaetze, label: "Einsätze", format: zahl }
+  aufteilungen:
+    - { name: projekt, label: "Je Projekt", filter: true, darunter: { name: ticket, label: "Je Ticket" } }
+    - { name: modell, label: "Je Modell" }
+    - { name: quelle, label: "Je Quelle" }
+  anteile:
+    - { name: wert_geschaetzt, label: "geschätzt", text: "Anteil der Kosten aus geschätzten statt gemessenen Tokens" }
+    - { name: wert_ohne_ticket, label: "nicht zugeordnet", text: "Anteil der Kosten ohne Ticket" }
+    - { name: ohne_preis, label: "ohne Preis", format: anzahl, text: "Einsätze, für deren Modell kein Preis hinterlegt ist" }
+  hinweise: v_modul_ki_verbrauch_hinweise
+  rollen: [betreuer]
+  eingriffe: []
+  uebersicht:
+    titel: "KI-Verbrauch"
+    reihenfolge: 20

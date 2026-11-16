@@ -1,0 +1,244 @@
+name: CI
+
+# Nur für PRs (COPI-76). Ein Lauf auf main nach dem Merge wäre doppelt: Die Branch-Protection
+# verlangt, dass jeder PR auf dem aktuellen main geprüft ist, bevor er gemergt wird. Von Hand
+# (Actions → CI → Run workflow) geht es weiterhin. Der Release-Workflow läuft unabhängig davon.
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Ein neuer Push auf denselben PR bricht den laufenden, überholten Lauf ab (COPI-76).
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Ein Job für Gates 1–4 (COPI-179). Bis dahin liefen die Tests in drei Shards (COPI-72) plus einem Sammel-Job. Auf
+  # der devbox gibt es für dieses Repo genau einen Runner: die Shards liefen nacheinander, jeder mit eigenem Setup,
+  # Postgres und Upload, eine Runde belegte die devbox ~15 Minuten in fünf Jobs. Ein Testlauf mit mehr Workern ist
+  # schneller. Ohne CI_RUNS_ON (ubuntu-latest, zwei Kerne) läuft derselbe Job mit zwei Workern, nur langsamer.
+  gates:
+    name: Gates 1-4 (typecheck, lint, test, duplication)
+    # JAC-770: auf der devbox, wenn die Repo-Variable CI_RUNS_ON gesetzt ist (z. B. ["self-hosted","devbox"]),
+    # sonst wie bisher bei GitHub. Zurückschalten = Variable löschen, ohne Code-Änderung.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cockpit
+          POSTGRES_PASSWORD: cockpit
+          POSTGRES_DB: cockpit
+        # COPI-205: Freier Host-Port statt 5432, damit Jobs auf derselben Maschine nicht kollidieren, und das
+        # Datenverzeichnis im RAM. Testdaten brauchen keine Haltbarkeit.
+        ports:
+          - 5432
+        options: >-
+          --tmpfs /var/lib/postgresql/data
+          --health-cmd "pg_isready -U cockpit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Der Merge-Commit des PRs und sein erster Elternteil (main): genug für die Änderungen unten.
+          fetch-depth: 2
+
+      # COPI-205: Der job-Kontext (Port des Service-Containers) ist auf Job-Ebene nicht verfügbar, deshalb setzt
+      # dieser Schritt die URLs. Die Tests lesen nur TEST_DATABASE_URL; das globalSetup legt cockpit_test an und
+      # migriert sie. Danach Postgres ohne Durability: fsync & Co. aus (in einem vergleichbaren Projekt rund 15 % schneller).
+      - name: Testdatenbank konfigurieren
+        env:
+          PG_PORT: ${{ job.services.postgres.ports['5432'] }}
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          echo "TEST_DATABASE_URL=postgres://cockpit:cockpit@localhost:${PG_PORT}/cockpit_test" >> "$GITHUB_ENV"
+          echo "SMOKE_DATABASE_URL=postgres://cockpit:cockpit@localhost:${PG_PORT}/cockpit" >> "$GITHUB_ENV"
+          docker exec "$PG_CONTAINER" psql -U cockpit -d cockpit -v ON_ERROR_STOP=1 \
+            -c "ALTER SYSTEM SET fsync = off" \
+            -c "ALTER SYSTEM SET synchronous_commit = off" \
+            -c "ALTER SYSTEM SET full_page_writes = off" \
+            -c "SELECT pg_reload_conf()"
+
+      # COPI-179: Reine Markdown-PRs brauchen keinen vollen Testlauf, siehe das Skript.
+      - name: Umfang bestimmen
+        id: umfang
+        run: sh .github/scripts/ci-umfang.sh "$GITHUB_EVENT_NAME" | tee -a "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - run: npm ci
+
+      - name: Gate 1 — TypeScript strict
+        run: npm run typecheck
+
+      - name: Gate 2 — Lint
+        run: npm run lint
+
+      - name: Öffentlicher Teil ohne interne Namen (COPI-247)
+        run: npm run oeffentlich
+
+      - name: Öffentlicher Teil baut für sich allein (COPI-249)
+        run: npm run oeffentlich:bauen
+
+      # COPI-248: Geheimnisse in versionierten Dateien (gitleaks, Docker-Image in scripts/secret-scan.sh gepinnt);
+      # Ausnahmen mit Begründung in .gitleaks.toml.
+      - name: Secret-Scan (gitleaks)
+        run: npm run secretscan
+
+      - name: Gate 4 — Duplication (jscpd, Schwelle 1 %)
+        run: npm run dupes
+
+      # Prüft, dass die Migrationen auf einer leeren Datenbank (cockpit) durchlaufen. Das Schema der
+      # Tests legt deren globalSetup selbst an (cockpit_test).
+      - name: Migrations-Smoke-Test
+        if: ${{ steps.umfang.outputs.tests == 'true' }}
+        run: DATABASE_URL="$SMOKE_DATABASE_URL" npm run migrate
+
+      # Ein Worker je Kern, höchstens vier: die devbox (sechs Kerne) teilt sich der Runner mit anderen Repos.
+      - name: Gate 3 — Tests mit Coverage
+        if: ${{ steps.umfang.outputs.tests == 'true' }}
+        run: |
+          workers=$(nproc)
+          [ "$workers" -le 4 ] || workers=4
+          npm run coverage -- --maxWorkers="$workers" --reporter=default --reporter=junit --outputFile.junit=coverage/junit.xml
+
+      # COPI-205: Die zehn langsamsten Testdateien in die Job-Zusammenfassung, damit sich Umbauten an Zahlen messen.
+      - name: Langsamste Testdateien
+        if: ${{ always() && steps.umfang.outputs.tests == 'true' && hashFiles('coverage/junit.xml') != '' }}
+        run: |
+          node -e '
+            const x = require("fs").readFileSync("coverage/junit.xml", "utf8");
+            const s = [...x.matchAll(/<testsuite name="([^"]+)"[^>]*?time="([0-9.]+)"/g)].map(m => [m[1], +m[2]]);
+            s.sort((a, b) => b[1] - a[1]);
+            const z = ["| Datei | Sekunden |", "| --- | ---: |", ...s.slice(0, 10).map(([n, t]) => `| ${n} | ${t.toFixed(1)} |`)];
+            console.log(z.join("\n"));
+          ' | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Auch ein Doku-PR kann Tests brechen: die Routentabelle im README und die API-Verträge unter docs/ werden
+      # gegen den Code geprüft. Es laufen die Testdateien, die eine Markdown-Datei nennen.
+      - name: Gate 3 — Tests, die Markdown lesen
+        if: ${{ steps.umfang.outputs.tests != 'true' }}
+        run: grep -lE "\.md['\"\`]" test/*.test.ts | xargs npx vitest run
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ steps.umfang.outputs.tests == 'true' }}
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
+
+  docker:
+    name: Gate 6 — Docker-Build
+    # JAC-770: läuft wie Tests und Gates auf dem Runner aus CI_RUNS_ON (devbox), sonst bei GitHub. Notschalter:
+    # CI_SKIP_DOCKER=true überspringt den Job. Ein übersprungener Job gilt für die Branch-Protection als bestanden,
+    # für den devpipe-Runner nicht, die Pipeline bleibt dann stehen. Nur kurzfristig setzen.
+    if: ${{ vars.CI_SKIP_DOCKER != 'true' }}
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    # Die leere PostgreSQL für den Schema-Smoke-Test (COPI-31) startet der Schritt unten selbst, in einem eigenen
+    # Docker-Netz zusammen mit dem Image. Kein Service-Container mit `--network host`: unter rootless Docker auf der
+    # devbox ist `localhost` im Container nicht der Host (JAC-770).
+    env:
+      SMOKE_NETZ: cockpit-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+      SMOKE_PORT: 39105
+    # COPI-179: Der Job läuft immer und endet grün, damit der Pflicht-Check auch für den devpipe-Runner erfüllt ist.
+    # Gebaut wird nur, wenn sich etwas geändert hat, das ins Image kommt (siehe .github/scripts/ci-umfang.sh).
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Umfang bestimmen
+        id: umfang
+        run: sh .github/scripts/ci-umfang.sh "$GITHUB_EVENT_NAME" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Kein Build nötig
+        if: ${{ steps.umfang.outputs.docker != 'true' }}
+        run: echo "Gate 6 ohne Build, der PR ändert nichts, was ins Image kommt."
+
+      # Treiber `docker`: baut im lokalen Daemon. Auf der devbox bleibt so der Layer-Cache zwischen Läufen erhalten,
+      # und `load` braucht keinen Export aus einem Builder-Container.
+      - uses: docker/setup-buildx-action@v4
+        if: ${{ steps.umfang.outputs.docker == 'true' }}
+        with:
+          driver: docker
+      - name: Image bauen (nur Build-Check, kein Push)
+        if: ${{ steps.umfang.outputs.docker == 'true' }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          # Lokal laden, damit der Smoke-Test unten das gebaute Image starten kann.
+          load: true
+          tags: cockpit:ci
+          # Wie im Release (COPI-39): der Smoke-Test prüft, dass das Image genau diese Version meldet.
+          build-args: |
+            COCKPIT_VERSION=0.0.0-ci
+            COCKPIT_COMMIT=${{ github.sha }}
+
+      # Bauen allein beweist nichts: bis COPI-24 baute die CI ein Image, das nie
+      # starten konnte (Build-Pfad und Startbefehl passten nicht zusammen).
+      - name: Smoke-Test — das Image startet seine Werkzeuge
+        if: ${{ steps.umfang.outputs.docker == 'true' }}
+        run: |
+          docker run --rm cockpit:ci node dist/cli/index.js --hilfe
+          docker run --rm cockpit:ci node -e "import('./dist/server/app.js').then(() => console.log('app.js lädt'))"
+
+      # Die Passkey-Routen lesen ihr Browser-Skript beim Aufbau der Anwendung. Fehlt der
+      # Ordner `assets` im Image, fällt das erst hier auf und nicht beim ersten Kunden
+      # (COPI-26). Es gibt keine Datenbank: die Meldung von Better Auth, dass sie das
+      # Schema nicht prüfen kann, ist erwartet; entscheidend ist der Exit-Code.
+      - name: Smoke-Test — die Anwendung baut sich samt Passkey-Skript aus dem Image auf
+        if: ${{ steps.umfang.outputs.docker == 'true' }}
+        run: |
+          docker run --rm -i cockpit:ci node --input-type=module <<'EOF'
+          import pg from 'pg';
+          import { buildApp } from './dist/server/app.js';
+          import { erzeugeAuth } from './dist/auth/konfiguration.js';
+          const url = 'postgres://kein:kein@127.0.0.1:1/kein';
+          const pool = new pg.Pool({ connectionString: url });
+          const auth = erzeugeAuth({ databaseUrl: url, basisUrl: 'https://cockpit.example', secret: 'x'.repeat(40), pool });
+          const app = buildApp({ nodeEnv: 'production' }, { auth, pool, basisUrl: 'https://cockpit.example' });
+          await app.ready();
+          await app.close();
+          await pool.end();
+          console.log('Anwendung baut sich samt Passkey-Skript aus dem Image auf');
+          EOF
+
+      # Stylesheet und Schriften (COPI-30): Tailwind läuft nur im Build-Stage. Das Image muss das gebaute,
+      # gehashte Ergebnis enthalten und mit `immutable` ausliefern, und darf keine Build-Werkzeuge tragen.
+      - name: Smoke-Test — Stylesheet und Schriften kommen aus dem Image
+        if: ${{ steps.umfang.outputs.docker == 'true' }}
+        run: sh docker/smoke-assets.sh cockpit:ci
+
+      # Der Weg einer neuen Instanz (COPI-31): auf einer leeren Datenbank legt das Image mit `migrieren`
+      # das Schema an, danach startet das Cockpit und antwortet auf /gesund. Bis dahin enthielt das Image
+      # weder Migrationen noch Runner, und die CI merkte es nicht. Läuft auch lokal, siehe das Skript.
+      # Seit COPI-39 auch: das gestartete Cockpit meldet Version (gebacken) und Digest (Umgebung) in cockpit.instanz.
+      - name: Smoke-Test — leere Datenbank, `migrieren`, Start, Selbstmeldung
+        if: ${{ steps.umfang.outputs.docker == 'true' }}
+        run: |
+          docker network create "$SMOKE_NETZ" >/dev/null
+          docker run -d --name "$SMOKE_NETZ-db" --network "$SMOKE_NETZ" \
+            -e POSTGRES_USER=cockpit -e POSTGRES_PASSWORD=cockpit -e POSTGRES_DB=cockpit postgres:16-alpine >/dev/null
+          for _ in $(seq 1 60); do
+            docker exec "$SMOKE_NETZ-db" pg_isready -U cockpit -d cockpit >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec "$SMOKE_NETZ-db" pg_isready -U cockpit -d cockpit
+          export SMOKE_URL="http://127.0.0.1:${SMOKE_PORT}"
+          SMOKE_VERSION="0.0.0-ci+${GITHUB_SHA:0:7}" sh docker/smoke-schema.sh cockpit:ci "postgres://cockpit:cockpit@${SMOKE_NETZ}-db:5432/cockpit" \
+            --network "$SMOKE_NETZ" -p "127.0.0.1:${SMOKE_PORT}:3000"
+
+      # Auf dem Self-hosted-Runner bleibt sonst jeder Lauf als Container und Netz liegen.
+      - name: Smoke-Test aufräumen
+        if: ${{ always() }}
+        run: |
+          docker rm -f "$SMOKE_NETZ-db" >/dev/null 2>&1 || true
+          docker network rm "$SMOKE_NETZ" >/dev/null 2>&1 || true
+          docker image rm cockpit:ci >/dev/null 2>&1 || true

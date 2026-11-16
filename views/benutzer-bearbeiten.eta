@@ -1,0 +1,105 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Ein Konto bearbeiten (COPI-46). Angaben: `konto` (eine Zeile aus `benutzerListe`), `pfad` (die Seite des Kontos),
+  `aktionen` (was dieser Zugang daran darf: name, rolle, entfernen, zuruecksetzen), `rollen` (die vergebbaren Rollen
+  mit `wert` und `name`), `frisch` (Anmeldung höchstens 15 Minuten alt), optional `fehler` und `erledigt`, und
+  `offeneAdresse` (`email`, `ablauf`): eine beantragte, noch nicht bestätigte Adresse (COPI-47).
+
+  Ohne frische Anmeldung gibt es kein Formular, nur den Weg zum neuen Anmelden. Jedes Formular führt zuerst zu einer
+  Bestätigungsseite; hier ändert sich noch nichts. Alles wird escaped.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/benutzer', ziel: 'Benutzer' } }) %>
+<% if (it.erledigt) { %>
+<%~ include('partials/hinweis', { art: 'ok', text: it.erledigt }) %>
+<% } %>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<section class="bereich" aria-labelledby="konto-name">
+  <div class="konto-kopf">
+    <h2 id="konto-name" class="bereich-name"><%= it.konto.name %></h2>
+    <span class="plakette plakette-<%= it.konto.stand.farbe %>"><%= it.konto.stand.text %></span>
+  </div>
+  <p class="konto-adresse"><%= it.konto.email %></p>
+  <dl class="werte">
+    <div><dt>Rolle</dt><dd><%= it.konto.rolle %></dd></div>
+    <div><dt>Zweiter Faktor</dt><dd><%= it.konto.faktor %></dd></div>
+    <% if (it.konto.stand.hinweis) { %>
+    <div><dt>Stand</dt><dd class="wert-warn"><%= it.konto.stand.hinweis %></dd></div>
+    <% } %>
+    <div><dt>Zuletzt angemeldet</dt><dd><%= it.konto.zuletzt %></dd></div>
+  </dl>
+  <% if (it.offeneAdresse) { %>
+  <p class="bereich-satz">Neue Adresse <strong><%= it.offeneAdresse.email %></strong> wartet auf Bestätigung (<%= it.offeneAdresse.ablauf %>).</p>
+  <% } %>
+</section>
+<% if (!it.frisch) { %>
+<section class="bereich" aria-labelledby="neu-anmelden-titel">
+  <h2 id="neu-anmelden-titel" class="bereich-name">Bitte neu anmelden</h2>
+  <p class="bereich-satz">Konten lassen sich nur bearbeiten, wenn die Anmeldung höchstens 15 Minuten zurückliegt. So kann niemand, der eine offene Sitzung übernimmt, Konten ändern.</p>
+  <form method="post" action="/abmelden">
+    <%~ include('partials/knopf', { text: 'Abmelden und neu anmelden', art: 'akzent' }) %>
+  </form>
+</section>
+<% } else { %>
+<% if (it.aktionen.includes('name')) { %>
+<section class="bereich" aria-labelledby="name-titel">
+  <h2 id="name-titel" class="bereich-name">Name</h2>
+  <form method="post" action="<%= it.pfad %>/aendern" class="formular">
+    <input type="hidden" name="aktion" value="name" />
+    <%~ include('partials/feld', { id: 'name', name: 'wert', label: 'Neuer Name', wert: it.konto.name, autocomplete: 'off', minlength: 2, maxlength: 100, hilfe: 'Nur die Anzeige; angemeldet wird mit der E-Mail-Adresse.' }) %>
+    <div><%~ include('partials/knopf', { text: 'Name ändern', art: 'sekundaer' }) %></div>
+  </form>
+</section>
+<% } %>
+<% if (it.aktionen.includes('email')) { %>
+<section class="bereich" aria-labelledby="email-titel">
+  <h2 id="email-titel" class="bereich-name">E-Mail-Adresse</h2>
+  <form method="post" action="<%= it.pfad %>/aendern" class="formular">
+    <input type="hidden" name="aktion" value="email" />
+    <%~ include('partials/feld', { id: 'email', name: 'wert', typ: 'email', label: 'Neue E-Mail-Adresse', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', maxlength: 254, hilfe: 'Gilt erst, wenn der Link in der Mail an die neue Adresse bestätigt ist. Die bisherige Adresse bekommt einen Hinweis.' }) %>
+    <div><%~ include('partials/knopf', { text: 'E-Mail-Adresse ändern', art: 'sekundaer' }) %></div>
+  </form>
+</section>
+<% } %>
+<% if (it.aktionen.includes('rolle') && it.rollen.length > 0) { %>
+<section class="bereich" aria-labelledby="rolle-titel">
+  <h2 id="rolle-titel" class="bereich-name">Rolle</h2>
+  <form method="post" action="<%= it.pfad %>/aendern" class="formular">
+    <input type="hidden" name="aktion" value="rolle" />
+    <div class="feld">
+      <label for="rolle">Neue Rolle</label>
+      <select id="rolle" name="wert" class="eingabe">
+        <% for (const rolle of it.rollen) { %>
+        <option value="<%= rolle.wert %>"><%= rolle.name %></option>
+        <% } %>
+      </select>
+    </div>
+    <div><%~ include('partials/knopf', { text: 'Rolle ändern', art: 'sekundaer' }) %></div>
+  </form>
+</section>
+<% } %>
+<% if (it.aktionen.includes('zuruecksetzen')) { %>
+<section class="bereich" aria-labelledby="zuruecksetzen-titel">
+  <h2 id="zuruecksetzen-titel" class="bereich-name">Zweiten Faktor zurücksetzen</h2>
+  <p class="bereich-satz">Wenn Passkey oder Authenticator-App nicht mehr funktionieren: Faktoren, Passwort und offene Sitzungen werden entwertet. Sie erhalten einen Link, den Sie persönlich übergeben; damit legt die Person ein neues Passwort und einen neuen zweiten Faktor fest.</p>
+  <form method="post" action="<%= it.pfad %>/aendern">
+    <input type="hidden" name="aktion" value="zuruecksetzen" />
+    <%~ include('partials/knopf', { text: 'Zweiten Faktor zurücksetzen', art: 'sekundaer' }) %>
+  </form>
+</section>
+<% } %>
+<% if (it.aktionen.includes('entfernen')) { %>
+<section class="bereich" aria-labelledby="entfernen-titel">
+  <h2 id="entfernen-titel" class="bereich-name">Konto entfernen</h2>
+  <p class="bereich-satz">Das Konto wird gelöscht, die Person kann sich nicht mehr anmelden. Das Protokoll bleibt bestehen.</p>
+  <form method="post" action="<%= it.pfad %>/aendern">
+    <input type="hidden" name="aktion" value="entfernen" />
+    <%~ include('partials/knopf', { text: 'Konto entfernen', art: 'sekundaer' }) %>
+  </form>
+</section>
+<% } %>
+<% } %>
+<p><a href="/benutzer" class="knopf knopf-sekundaer">Zurück zu den Benutzern</a></p>
+</div>

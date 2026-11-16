@@ -1,0 +1,326 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Einstellungen (COPI-39), aufgebaut wie der Bildschirm „Einstellungen" des Prototyps: Titel mit „Ansicht: <Rolle>",
+  darunter der Abschnitt Versionen. Angaben: `ansicht` (optional), `versionen` mit `sicht` (`kunde`, `betreuer`)
+  und `bereiche`. Alles wird escaped, nichts verlinkt: der Text der Versions-Wache kommt vom Admin-Agenten.
+  Digests und Versionen gibt es nur in der Betreuersicht; ein Bereich der Kundensicht hat dafür kein Feld.
+
+  Update-Antrag (COPI-40): `antrag.moeglich` nur mit dem Recht dazu (Betreuer), dann optional `antrag.hinweis`,
+  `antrag.fehler`, `antrag.eingabe`; je Bereich sagt `bereich.antrag.art`, was geht (beantragen, ohne-digest,
+  zurueckziehen, unterwegs). Kein „Jetzt aktualisieren": das Cockpit beantragt nur (ADR 13.1). Seit COPI-140 bietet
+  `bereich.update` das von der Versions-Wache gemeldete Ziel mit „Update installieren" an (`partials/update-angebot`);
+  die Eingabe eines Digests ist der eingeklappte Notweg „Bestimmten Stand wählen", nach einer falschen Eingabe offen.
+
+  Benachrichtigungen (COPI-58, COPI-59): `push` mit `eingerichtet` (VAPID auf der Instanz), `oeffentlich` (Schlüssel
+  für das Skript; nur mit Recht `chat_nutzen`), `geraete` (die eigenen, mit „Entfernen") und `hinweis`. Ob Push auf
+  diesem Gerät geht, weiß nur der Browser; für iPhone/iPad im Safari-Tab die Anleitung „Zum Home-Bildschirm".
+
+  Erscheinungsbild (COPI-101, nur mit Recht `erscheinungsbild_aendern`): `erscheinungsbild` mit `hash` (des aktuellen
+  Satzes), `eigenes` (`seit`, `von`, nur bei einem eigenen Symbol) und `hinweis`. Auswahl, Vorschau und Speichern macht
+  das Skript (`/einstellungen/app-symbol/skript.js`); ohne Skript bleiben Ansicht und „Zurücksetzen".
+
+  Freigabe von Updates (COPI-141, nur mit Recht `update_beantragen`): `freigabe` mit `hinweis` und `bereiche` (je
+  `bereich`, `name`, `modus`, `text`, `herkunft`) und `modi` (`wert`, `text`). Umschalten auf „Direkt installieren" geht
+  über eine Bestätigungsseite (`freigabe-bestaetigen.eta`).
+
+  Module (COPI-106, nur Betreuersicht): `versionen.module`, je aktives Modul eine Karte (`partials/modul-version`) mit
+  Antrag auf einen Commit in agent-blueprints. Rückmeldungen mit `antrag.modul` stehen an dessen Karte, nicht hier.
+
+  Betreuer-Zugriff (COPI-134, Betriebs-Admin ändert, Betreuer sieht nur): `betreuerZugriff` mit `aendern`, `hinweis`,
+  `stufen` und `module` (je Fachmodul `kennung`, `name`, `stufe`, `text`, `herkunft`). Technische Module fehlen hier.
+
+  Anmeldung & Sicherheit (COPI-94, für jede Rolle): `sicherheit` mit `plakette`, `passkeys` (Namen, escaped), `totp` und
+  `ersatzcodes` — eine Zusammenfassung, verwaltet wird auf `/sicherheit`.
+
+  Letzter Antrag (COPI-41, nur Betreuersicht): `bereich.letzterAntrag` mit Stand, Ziel, Ziel-Version, dem Weg zurück
+  (`digest_vorher`) und den erreichten Stufen — auch nach dem Abschluss, dann braucht man den Weg zurück.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, ansicht: it.ansicht, zurueck: { href: '/mehr', ziel: 'Mehr' } }) %>
+<% if (it.sicherheit) { %>
+<section class="einstellungen-abschnitt" aria-labelledby="sicherheit-titel">
+  <div class="abschnitt-kopf">
+    <h2 id="sicherheit-titel">Anmeldung &amp; Sicherheit</h2>
+  </div>
+  <div class="bereich">
+    <div class="bereich-kopf">
+      <h3 class="bereich-name">Zweite Faktoren</h3>
+      <span class="plakette plakette-gruen"><%= it.sicherheit.plakette %></span>
+    </div>
+    <p class="bereich-satz">Passkeys: <%= it.sicherheit.passkeys %> · Authenticator-App: <%= it.sicherheit.totp %> · <%= it.sicherheit.ersatzcodes %> Ersatzcodes übrig</p>
+    <div class="knopf-reihe"><a href="/sicherheit" class="knopf knopf-sekundaer">Verwalten</a></div>
+  </div>
+</section>
+<% } %>
+<% if (it.erscheinungsbild) { %>
+<% const eb = it.erscheinungsbild %>
+<section class="einstellungen-abschnitt" aria-labelledby="erscheinungsbild-titel" data-symbol="/einstellungen/app-symbol">
+  <div class="abschnitt-kopf">
+    <h2 id="erscheinungsbild-titel">Erscheinungsbild</h2>
+  </div>
+  <% if (eb.hinweis) { %>
+  <%~ include('partials/hinweis', { art: 'ok', text: eb.hinweis }) %>
+  <% } %>
+  <div class="bereich">
+    <div class="bereich-kopf">
+      <h3 class="bereich-name">App-Symbol</h3>
+      <span class="symbol-stand" data-symbol-stand><%= eb.eigenes ? 'Eigenes Logo' : 'Standard' %></span>
+    </div>
+    <% if (eb.eigenes) { %>
+    <p class="bereich-satz">Seit <%= eb.eigenes.seit %><% if (eb.eigenes.von) { %>, von <%= eb.eigenes.von %><% } %>.</p>
+    <% } %>
+    <div class="symbol-vorschau">
+      <p class="bereich-satz" data-symbol-titel>So sieht es aus</p>
+      <div class="symbol-figuren" data-symbol-aktuell>
+        <figure class="symbol-figur"><img class="symbol-ios" src="/icons/apple-touch-icon.<%= eb.hash %>.png" alt="" width="64" height="64" /><figcaption>iPhone</figcaption></figure>
+        <figure class="symbol-figur"><img class="symbol-android" src="/icons/icon-192.<%= eb.hash %>.png" alt="" width="64" height="64" /><figcaption>Android</figcaption></figure>
+        <figure class="symbol-figur"><div class="symbol-tab"><img class="symbol-tab-bild" src="/icons/favicon-32.<%= eb.hash %>.png" alt="" width="16" height="16" /><span>Cockpit</span></div><figcaption>Browser-Tab</figcaption></figure>
+      </div>
+      <div class="symbol-figuren" data-symbol-neu hidden>
+        <figure class="symbol-figur"><canvas class="symbol-ios" width="128" height="128" data-symbol-flaeche></canvas><figcaption>iPhone</figcaption></figure>
+        <figure class="symbol-figur"><canvas class="symbol-android" width="128" height="128" data-symbol-flaeche></canvas><figcaption>Android</figcaption></figure>
+        <figure class="symbol-figur"><div class="symbol-tab"><canvas class="symbol-tab-bild" width="32" height="32" data-symbol-flaeche></canvas><span>Cockpit</span></div><figcaption>Browser-Tab</figcaption></figure>
+      </div>
+    </div>
+    <div class="hinweis hinweis-fehler" role="alert" data-symbol-fehler hidden>
+      <svg viewBox="0 0 24 24" class="hinweis-symbol" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5.5" /><path d="M12 16.5h.01" /></svg>
+      <p data-symbol-fehlertext></p>
+    </div>
+    <p class="bereich-satz" data-symbol-ohne-skript>Ein eigenes Logo hochladen geht nur mit JavaScript.</p>
+    <div class="symbol-wahl" data-symbol-wahl hidden>
+      <p class="bereich-satz">Ein eigenes Logo ersetzt das Symbol auf dem Home-Bildschirm und im Browser-Tab. PNG, JPEG oder WebP, an der längeren Seite mindestens 512 Pixel, höchstens 5 MB.</p>
+      <label class="knopf knopf-primaer symbol-waehlen">
+        Bild auswählen
+        <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" data-symbol-datei />
+      </label>
+    </div>
+    <div class="symbol-optionen" data-symbol-optionen hidden>
+      <fieldset class="symbol-rand">
+        <legend>Rand um das Logo</legend>
+        <label><input type="radio" name="rand" value="ohne" data-symbol-rand /> Ohne Rand – das Bild füllt das Symbol</label>
+        <label><input type="radio" name="rand" value="mit" checked data-symbol-rand /> Mit Rand – empfohlen für Logos</label>
+        <p class="bereich-satz">Android schneidet das Symbol rund oder als Tropfen aus. Mit Rand bleibt das ganze Logo sichtbar.</p>
+      </fieldset>
+      <div class="symbol-farbe">
+        <label for="symbol-farbe">Hintergrundfarbe</label>
+        <div>
+          <input id="symbol-farbe" type="color" data-symbol-farbe />
+          <span class="symbol-farbwert" data-symbol-farbwert></span>
+          <span class="bereich-satz">füllt Rand und durchsichtige Stellen</span>
+        </div>
+      </div>
+      <div class="knopf-reihe">
+        <button type="button" class="knopf knopf-primaer" data-symbol-speichern>Speichern</button>
+        <button type="button" class="knopf knopf-sekundaer" data-symbol-verwerfen>Verwerfen</button>
+      </div>
+    </div>
+    <p class="bereich-satz">Bereits installierte Apps übernehmen ein neues Symbol erst, wenn man sie neu zum Home-Bildschirm hinzufügt (iPhone) bzw. nach einiger Zeit von selbst (Android).</p>
+    <% if (eb.eigenes) { %>
+    <form method="post" action="/einstellungen/app-symbol/zuruecksetzen">
+      <button type="submit" class="knopf knopf-sekundaer">Auf Standard zurücksetzen</button>
+    </form>
+    <% } %>
+  </div>
+  <script type="module" src="/einstellungen/app-symbol/skript.js"></script>
+</section>
+<% } %>
+<% if (it.betreuerZugriff) { %>
+<% const bz = it.betreuerZugriff %>
+<section class="einstellungen-abschnitt" aria-labelledby="betreuer-zugriff-titel">
+  <div class="abschnitt-kopf">
+    <h2 id="betreuer-zugriff-titel">Betreuer-Zugriff</h2>
+  </div>
+  <% if (bz.hinweis) { %>
+  <%~ include('partials/hinweis', { art: bz.hinweis.art, text: bz.hinweis.text }) %>
+  <% } %>
+  <p class="bereich-satz"><%= bz.aendern
+    ? 'Hier legen Sie fest, ob Ihr Betreuer die Inhalte eines Moduls sehen darf. Ohne Freigabe sieht er es nicht; technische Module wie Server-Zustand und KI-Verbrauch sieht er immer, damit er den Betrieb sichern kann.'
+    : 'Ob du die Inhalte eines Moduls siehst, legt der Betriebs-Admin fest. Technische Module siehst du immer.' %></p>
+  <% if (bz.module.length === 0) { %>
+  <p class="bereich-satz">Es ist noch kein Fachmodul eingespielt.</p>
+  <% } %>
+  <% for (const modul of bz.module) { %>
+  <div class="bereich">
+    <div class="bereich-kopf">
+      <h3 class="bereich-name"><%= modul.name %></h3>
+      <span class="plakette <%= modul.stufe === 'aus' ? 'plakette-info' : modul.stufe === 'lesen' ? 'plakette-gelb' : 'plakette-gruen' %>"><%= modul.text %></span>
+    </div>
+    <% if (modul.herkunft) { %>
+    <p class="bereich-satz">Zuletzt geändert <%= modul.herkunft %>.</p>
+    <% } %>
+    <% if (bz.aendern) { %>
+    <form method="post" action="/einstellungen/betreuer-zugriff" class="formular">
+      <input type="hidden" name="kennung" value="<%= modul.kennung %>" />
+      <div class="feld">
+        <label for="zugriff-<%= modul.kennung %>">Zugriff des Betreuers</label>
+        <select id="zugriff-<%= modul.kennung %>" name="stufe" class="eingabe">
+          <% for (const stufe of bz.stufen) { %>
+          <option value="<%= stufe.wert %>"<% if (stufe.wert === modul.stufe) { %> selected<% } %>><%= stufe.text %></option>
+          <% } %>
+        </select>
+      </div>
+      <div><%~ include('partials/knopf', { text: 'Speichern', art: 'sekundaer' }) %></div>
+    </form>
+    <% } %>
+  </div>
+  <% } %>
+</section>
+<% } %>
+<section class="einstellungen-abschnitt" aria-labelledby="benachrichtigungen-titel">
+  <div class="abschnitt-kopf">
+    <h2 id="benachrichtigungen-titel">Benachrichtigungen</h2>
+  </div>
+  <% if (it.push.hinweis) { %>
+  <%~ include('partials/hinweis', { art: 'ok', text: it.push.hinweis }) %>
+  <% } %>
+  <% if (it.push.fehler) { %>
+  <%~ include('partials/hinweis', { art: 'fehler', text: it.push.fehler }) %>
+  <% } %>
+  <% if (!it.push.eingerichtet) { %>
+  <div class="bereich push-hinweise">
+    <p>Push-Benachrichtigungen sind auf dieser Instanz nicht eingerichtet. Dringende Nachrichten kommen per E-Mail.</p>
+  </div>
+  <% } else { %>
+  <%/* COPI-58: welcher Satz gilt, weiß nur der Browser; `pwa.js` macht den passenden sichtbar. Ohne Skript der erste. */%>
+  <div class="bereich push-hinweise" data-push-hinweise>
+    <p data-push-zustand="ohne-skript">Ob Benachrichtigungen auf diesem Gerät gehen, zeigt diese Seite, wenn JavaScript an ist. Dringende Nachrichten kommen in jedem Fall auch per E-Mail.</p>
+    <p data-push-zustand="moeglich" hidden>Benachrichtigungen sind auf diesem Gerät möglich.</p>
+    <p data-push-zustand="erlaubt" hidden>Benachrichtigungen sind auf diesem Gerät erlaubt.</p>
+    <%/* COPI-116: wann ein Push kommt — für jedes Gerät gleich, deshalb ohne Skript sichtbar. */%>
+    <p><strong>Ein Push kommt</strong>, sobald im Posteingang oben etwas Neues ist: Mails und Vorgänge, „Freigabe nötig", Meldungen und Nachrichten. Höchstens einer pro Minute, bei mehreren Neuen zusammengefasst. Antworten des Assistenten und dringende Nachrichten kommen sofort.</p>
+    <p>Im Push steht nie, wer geschrieben hat oder worum es geht – nur, dass etwas da ist. Die Zahl am App-Symbol zeigt, wie viel ungelesen ist.</p>
+    <p data-push-zustand="abgelehnt" hidden>Benachrichtigungen sind auf diesem Gerät abgelehnt. Erlauben lässt sich das nur in den Einstellungen des Browsers oder des Geräts. Dringende Nachrichten kommen weiter per E-Mail.</p>
+    <p data-push-zustand="nicht_unterstuetzt" hidden>Dieser Browser kann keine Benachrichtigungen empfangen (auf iPhone und iPad erst ab iOS 16.4). Dringende Nachrichten kommen per E-Mail.</p>
+    <div data-push-zustand="home_bildschirm" hidden>
+      <p>Auf iPhone und iPad gehen Benachrichtigungen nur, wenn das Cockpit auf dem Home-Bildschirm liegt:</p>
+      <ol class="push-schritte">
+        <li>In Safari unten auf „Teilen" tippen (das Quadrat mit dem Pfeil nach oben).</li>
+        <li>„Zum Home-Bildschirm" wählen und mit „Hinzufügen" bestätigen.</li>
+        <li>Das Cockpit künftig über das neue Symbol öffnen und hier die Benachrichtigungen einschalten.</li>
+      </ol>
+      <p>Bis dahin kommen dringende Nachrichten per E-Mail.</p>
+    </div>
+    <% if (it.push.oeffentlich) { %>
+    <%/* COPI-59: die Knöpfe braucht das Skript; ohne Skript bleiben sie verborgen. */%>
+    <div class="push-steuerung" data-push-schluessel="<%= it.push.oeffentlich %>" hidden>
+      <button type="button" class="knopf knopf-primaer" data-push-an hidden>Auf diesem Gerät einschalten</button>
+      <button type="button" class="knopf knopf-sekundaer" data-push-aus hidden>Auf diesem Gerät ausschalten</button>
+      <p class="push-meldung" data-push-meldung hidden role="alert">Das hat nicht geklappt. Bitte die Seite neu laden und noch einmal versuchen.</p>
+    </div>
+    <% } %>
+  </div>
+  <% if (it.push.geraete.length > 0) { %>
+  <div class="bereich">
+    <h3 class="bereich-name">Geräte mit Benachrichtigungen</h3>
+    <%/* COPI-116: ohne Skript, an alle eigenen Geräte — so lässt sich prüfen, ob Push überhaupt ankommt. */%>
+    <form method="post" action="/push/test" class="push-test">
+      <button type="submit" class="knopf knopf-sekundaer">Test-Push senden</button>
+    </form>
+    <ul class="push-geraete">
+      <% for (const geraet of it.push.geraete) { %>
+      <li class="push-geraet">
+        <div class="min-w-0">
+          <p class="push-geraet-name"><%= geraet.name %></p>
+          <p class="push-geraet-meta">seit <%= geraet.seit %> · <%= geraet.erreicht %></p>
+        </div>
+        <form method="post" action="/push/geraete/<%= geraet.id %>/entfernen">
+          <button type="submit" class="knopf knopf-sekundaer">Entfernen</button>
+        </form>
+      </li>
+      <% } %>
+    </ul>
+  </div>
+  <% } %>
+  <% } %>
+</section>
+<section class="einstellungen-abschnitt" aria-labelledby="versionen-titel">
+  <div class="abschnitt-kopf">
+    <h2 id="versionen-titel">Versionen</h2>
+    <% if (it.versionen.sicht === 'betreuer') { %>
+    <span class="nur-betreuer">Nur Betreuer</span>
+    <% } %>
+  </div>
+  <% if (it.freigabe) { %>
+  <%~ include('partials/freigabe-modus', { freigabe: it.freigabe }) %>
+  <% } %>
+  <ul class="bereiche">
+    <% for (const bereich of it.versionen.bereiche) { %>
+    <li class="bereich">
+      <div class="bereich-kopf">
+        <h3 class="bereich-name"><%= bereich.name %></h3>
+        <% if (it.versionen.sicht === 'betreuer' && bereich.marke) { %>
+        <span class="plakette plakette-<%= bereich.marke.farbe %>"><%= bereich.marke.text %></span>
+        <% } %>
+      </div>
+      <% if (it.versionen.sicht === 'betreuer') { %>
+      <dl class="werte">
+        <div><dt>Version</dt><dd><%= bereich.version ?? 'noch nicht gemeldet' %></dd></div>
+        <div><dt>Laufender Digest</dt><dd class="digest-wert"><% if (bereich.digest) { %><code class="digest"><%= bereich.digest %></code><% } else { %>nicht gesetzt<% } %></dd></div>
+        <% if (bereich.gestartet) { %>
+        <div><dt>Gestartet</dt><dd><%= bereich.gestartet %></dd></div>
+        <% } %>
+        <div><dt>Soll-Digest</dt><dd class="digest-wert"><% if (bereich.sollDigest) { %><code class="digest"><%= bereich.sollDigest %></code><% } else { %>kein Update beantragt<% } %></dd></div>
+        <div><dt>Verfügbar</dt><dd><%= bereich.verfuegbar ?? 'noch nicht gemeldet' %></dd></div>
+        <div><dt>Versions-Wache</dt><dd<% if (bereich.wache.ueberfaellig) { %> class="wert-warn"<% } %>><%= bereich.wache.text %></dd></div>
+      </dl>
+      <% if (bereich.letzterAntrag) { %>
+      <% const letzter = bereich.letzterAntrag %>
+      <section class="letzter-antrag" aria-labelledby="letzter-antrag-<%= letzter.nummer %>">
+        <h4 id="letzter-antrag-<%= letzter.nummer %>" class="letzter-antrag-titel">Letzter Antrag Nr. <%= letzter.nummer %></h4>
+        <dl class="werte">
+          <div><dt>Stand</dt><dd<% if (letzter.haengt) { %> class="wert-rot"<% } %>><%= letzter.stand %></dd></div>
+          <div><dt>Freigabe</dt><dd><%= letzter.freigabe %></dd></div>
+          <div><dt>Ziel</dt><dd class="digest-wert"><code class="digest"><%= letzter.zielDigest %></code></dd></div>
+          <% if (letzter.zielVersion) { %>
+          <div><dt>Ziel-Version</dt><dd><%= letzter.zielVersion %></dd></div>
+          <% } %>
+          <div><dt>Weg zurück</dt><dd class="digest-wert"><code class="digest"><%= letzter.digestVorher %></code></dd></div>
+          <% for (const stufe of letzter.stufen) { %>
+          <div><dt><%= stufe.name %></dt><dd><%= stufe.wann %></dd></div>
+          <% } %>
+        </dl>
+      </section>
+      <% } %>
+      <% if (it.antrag.moeglich) { %>
+      <div class="bereich-antrag">
+        <% if (it.antrag.hinweis && !it.antrag.modul) { %>
+        <%~ include('partials/hinweis', { art: 'ok', text: it.antrag.hinweis }) %>
+        <% } %>
+        <% if (it.antrag.fehler && !it.antrag.modul) { %>
+        <%~ include('partials/hinweis', { art: 'fehler', text: it.antrag.fehler }) %>
+        <% } %>
+        <% if (bereich.antrag.art === 'beantragen') { %>
+        <% if (bereich.update) { %>
+        <%~ include('partials/update-angebot', { zeile: bereich.update.zeile, automatik: bereich.update.automatik, aktion: '/einstellungen/update' }) %>
+        <% } %>
+        <details class="notweg"<% if (!it.antrag.modul && it.antrag.eingabe !== undefined) { %> open<% } %>>
+        <summary class="notweg-kopf"><span>Bestimmten Stand wählen</span><span class="aufklapp-pfeil" aria-hidden="true"></span></summary>
+        <form method="post" action="/einstellungen/update" class="formular notweg-inhalt">
+          <%~ include('partials/feld', { id: 'ziel-digest', name: 'ziel', label: 'Ziel-Digest', mono: true, wert: it.antrag.modul ? undefined : it.antrag.eingabe, autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', hilfe: 'Vollständig, mit sha256: und 64 Zeichen – etwa für den Weg zurück auf einen früheren Stand.' }) %>
+          <div><%~ include('partials/knopf', { text: 'Diesen Stand beantragen', art: 'sekundaer' }) %></div>
+        </form>
+        </details>
+        <% } else if (bereich.antrag.art === 'ohne-digest') { %>
+        <p class="bereich-satz">Ein Update lässt sich erst beantragen, wenn das Cockpit seinen laufenden Digest meldet.</p>
+        <% } else if (bereich.antrag.art === 'zurueckziehen') { %>
+        <p class="bereich-satz"><%= bereich.antrag.satz %></p>
+        <form method="post" action="/einstellungen/update/zurueckziehen">
+          <input type="hidden" name="id" value="<%= bereich.antrag.id %>" />
+          <%~ include('partials/knopf', { text: 'Antrag zurückziehen', art: 'sekundaer' }) %>
+        </form>
+        <% } else { %>
+        <p class="bereich-satz"><%= bereich.antrag.satz %></p>
+        <% } %>
+      </div>
+      <% } %>
+      <% } else { %>
+      <p class="bereich-satz"><%= bereich.satz %></p>
+      <% } %>
+    </li>
+    <% } %>
+    <% for (const modul of it.versionen.module ?? []) { %>
+    <%~ include('partials/modul-version', { modul, antrag: it.antrag }) %>
+    <% } %>
+  </ul>
+</section>
+</div>

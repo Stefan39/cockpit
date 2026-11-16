@@ -1,0 +1,19 @@
+<%/*
+  „Update verfügbar" mit Knopf (COPI-140), im Antragsteil einer Karte unter Einstellungen › Versionen. Angaben: `zeile`
+  (`VerfuegbaresUpdate.zeile`, enthält den Hinweis der Versions-Wache — escaped), `aktion` (das Formular des Antrags) und
+  optional `modul` (die Kennung) und `automatik` (der Satz zur Automatik, COPI-142). Der Knopf schickt kein Ziel, nur `quelle=wache`: das Ziel liest der Server aus dem
+  Befund der Wache, beim Anzeigen der Bestätigung und noch einmal beim Bestätigen.
+*/%>
+<div class="update-angebot">
+  <p class="update-zeile"><%= it.zeile %></p>
+  <% if (it.automatik) { %>
+  <p class="hilfe"><%= it.automatik %></p>
+  <% } %>
+  <form method="post" action="<%= it.aktion %>">
+    <% if (it.modul) { %>
+    <input type="hidden" name="modul" value="<%= it.modul %>" />
+    <% } %>
+    <input type="hidden" name="quelle" value="wache" />
+    <%~ include('./knopf', { text: 'Update installieren' }) %>
+  </form>
+</div>

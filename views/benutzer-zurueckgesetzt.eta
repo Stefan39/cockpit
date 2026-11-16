@@ -1,0 +1,17 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Nach dem Zurücksetzen des zweiten Faktors (COPI-46): der Link zur Wiederherstellung, **genau hier und nur einmal**
+  (die Seite ist `no-store`, der Link steht nirgends sonst). Angaben: `name`, `link`, `gueltigStunden`, `pfad`.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/benutzer', ziel: 'Benutzer' } }) %>
+<%~ include('partials/hinweis', { art: 'ok', text: `Der zweite Faktor von ${it.name} ist zurückgesetzt.` }) %>
+<section class="bereich" aria-labelledby="link-titel">
+  <h2 id="link-titel" class="bereich-name">Link zur Wiederherstellung</h2>
+  <p class="bereich-satz">Übergeben Sie diesen Link persönlich. Damit legt die Person ein neues Passwort und einen neuen zweiten Faktor fest. Er ist <%= it.gueltigStunden %> Stunden gültig und wird nur jetzt angezeigt.</p>
+  <dl class="digests">
+    <div><dt>Link</dt><dd><code class="digest-voll"><%= it.link %></code></dd></div>
+  </dl>
+</section>
+<p><a href="<%= it.pfad %>" class="knopf knopf-sekundaer">Zurück zum Konto</a></p>
+</div>

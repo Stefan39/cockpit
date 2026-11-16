@@ -1,0 +1,224 @@
+name: Release
+
+# Ein Release entsteht per Release-PR (COPI-49): ein PR hebt die Version in package.json an, Stefan gibt ihn frei,
+# und erst der Merge veröffentlicht. Dieser Workflow läuft danach auf main, prüft die Version und veröffentlicht
+# sie, wenn es ihren Tag noch nicht gibt — Tag, Image nach GHCR und GitHub-Release mit Digest. Niemand setzt Tags
+# von Hand, auch ein Agent nicht: der Tag ist das Ergebnis einer Freigabe, nicht ihr Anfang.
+#
+# Kundeninstanzen ziehen ausschließlich SemVer+Digest, nie ein bewegliches Tag (Architektur-Vorschlag Abschnitt
+# 8/13.1). Deshalb entsteht hier auch kein `latest` und kein `X.Y`.
+#
+# Zwei Architekturen (COPI-86): amd64 und arm64 (der VPS des KI-Teams ist ein Hetzner cax21). Jede baut nativ auf
+# ihrem eigenen Runner — `ubuntu-24.04-arm` gibt es seit 01/2026 auch für private Repos als Standard-Runner, er
+# zählt zum Freikontingent; Emulation per QEMU wäre um ein Vielfaches langsamer. Jeder Build pusht nur per Digest
+# (ohne Tag), erst `veroeffentlichen` fasst beide zu einem Manifest mit dem Versions-Tag zusammen. Der Digest dieses
+# Manifests ist der, den Instanzen pinnen: Docker wählt darüber die passende Architektur.
+#
+# Actions-Minuten (JAC-770): `version` läuft nach jedem Merge auf main, der amd64-Build bei jedem Release. Beide
+# laufen deshalb wie die CI über die Repo-Variable CI_RUNS_ON auf dem Self-hosted-Runner der devbox (amd64). Ohne
+# Variable bleibt es bei `ubuntu-latest`. Auf GitHub bleiben nur der arm64-Build (die devbox kann kein arm64) und
+# `veroeffentlichen` — beide laufen ausschließlich, wenn wirklich ein Release entsteht.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # Tag und GitHub-Release
+  packages: write # Image nach GHCR
+
+# Zwei Läufe zugleich würden sich um denselben Tag streiten.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Version prüfen
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      stand: ${{ steps.version.outputs.stand }}
+      bild: ${{ steps.version.outputs.bild }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version aus package.json gegen die vorhandenen Releases halten
+        id: version
+        run: |
+          # Ohne node: auf der devbox (Self-hosted-Runner) gibt es kein node im PATH. Das erste "version" in
+          # package.json ist das oberste Feld; release-version.sh prüft danach die Form X.Y.Z.
+          version=$(sed -n 's/^  "version": *"\([^"]*\)".*/\1/p' package.json | head -n 1)
+          test -n "$version" || { echo "Keine Version in package.json gefunden" >&2; exit 1; }
+          stand=$(git ls-remote --tags --refs origin 'v*' | sed 's#.*refs/tags/##' \
+            | sh .github/scripts/release-version.sh "$version")
+          # GHCR verlangt Kleinbuchstaben, der Repo-Name hat ein großes S.
+          {
+            echo "version=$version"
+            echo "stand=$stand"
+            echo "bild=ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          } >> "$GITHUB_OUTPUT"
+          echo "Version $version: $stand" >> "$GITHUB_STEP_SUMMARY"
+
+  bauen:
+    name: Image bauen (${{ matrix.variante }}, ${{ matrix.plattform }})
+    needs: version
+    if: needs.version.outputs.stand == 'neu'
+    strategy:
+      matrix:
+        include:
+          - variante: kunde
+            plattform: linux/amd64
+            runner: ubuntu-latest
+          - variante: kunde
+            plattform: linux/arm64
+            runner: ubuntu-24.04-arm
+    # amd64 auf der devbox (CI_RUNS_ON), arm64 nativ bei GitHub. Der Matrix-Wert bleibt das GitHub-Label, damit der
+    # Artefaktname stabil ist.
+    runs-on: ${{ matrix.runner == 'ubuntu-latest' && fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') || matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Bei GHCR anmelden
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Die OCI-Labels kommen von hier. Das Label org.opencontainers.image.source verbindet das Paket mit dem Repo —
+      # daran hängt, wer es ziehen darf. Das Tag vergibt erst `veroeffentlichen`, am Manifest.
+      - name: Metadaten
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.version.outputs.bild }}
+
+      - name: Bauen und per Digest pushen
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.plattform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ needs.version.outputs.bild }},push-by-digest=true,name-canonical=true,push=true
+          # Version und Commit ins Image (COPI-39): das Cockpit meldet sie beim Start in cockpit.instanz. Den Digest
+          # kann das Image nicht enthalten; er kommt aus der Compose-Datei (COCKPIT_IMAGE_DIGEST).
+          build-args: |
+            COCKPIT_VERSION=${{ needs.version.outputs.version }}
+            COCKPIT_COMMIT=${{ github.sha }}
+
+      - name: Digest für das Manifest ablegen
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          mkdir -p digests
+          touch "digests/${DIGEST#sha256:}"
+
+      # Auf dem Self-hosted-Runner bliebe der GHCR-Zugang sonst in ~/.docker/config.json liegen.
+      - name: Bei GHCR abmelden
+        if: ${{ always() && runner.environment == 'self-hosted' }}
+        run: docker logout ghcr.io
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digest-${{ matrix.variante }}-${{ matrix.runner }}
+          path: digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  veroeffentlichen:
+    name: Manifest, Tag und Release
+    needs: [version, bauen]
+    if: needs.version.outputs.stand == 'neu'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: digests
+          pattern: digest-*
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Bei GHCR anmelden
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Genau ein Tag, die Version. Die Quelle steht zusätzlich am Manifest selbst, nicht nur an den Einzel-Images.
+      - name: Manifest mit genau einem Tag, der Version
+        id: manifest
+        working-directory: digests
+        env:
+          BILD: ${{ needs.version.outputs.bild }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          # Je Architektur ein Digest (Dateiname). Ohne beide kein Manifest: ein halbes Release wäre für eine
+          # der Architekturen kaputt.
+          set --
+          for datei in digest-kunde-*/*; do set -- "$@" "$BILD@sha256:${datei##*/}"; done
+          test "$#" -eq 2
+          docker buildx imagetools create -t "$BILD:$VERSION" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            "$@"
+          digest=$(docker buildx imagetools inspect "$BILD:$VERSION" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          docker buildx imagetools inspect "$BILD@$digest"
+
+      # Erst nach dem Push: ein Tag ohne Image wäre eine Lüge. Der Tag entsteht hier mit dem Release.
+      - name: Tag und GitHub-Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+          BILD: ${{ needs.version.outputs.bild }}
+          DIGEST: ${{ steps.manifest.outputs.digest }}
+        run: |
+          {
+            echo "**Image:** \`${BILD}@${DIGEST}\` (amd64 und arm64)"
+            echo
+            echo "Dieser Digest gehört in \`docker/compose.fragment.yaml\` der Kundeninstanz — zweimal: in die"
+            echo "\`image:\`-Zeile und nach \`COCKPIT_IMAGE_DIGEST\`. Nie das bewegliche Tag eintragen."
+            echo "Vorgehen: \`docs/installation.md\`."
+          } > notizen.md
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" \
+            --notes-file notizen.md --generate-notes
+          {
+            echo "### Release v$VERSION"
+            echo '```'
+            echo "${BILD}@${DIGEST}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Versions-Wache anstoßen (COPI-236, ADR COPI-211); nur, wenn die Repo-Variable COCKPIT_VERSIONSWACHE_URL gesetzt ist: Ohne diesen Aufruf bleibt „Verfügbar“ im Cockpit bis zum
+      # Lauf um 06:20 am nächsten Morgen falsch. Der Schritt steht bewusst zuletzt und bricht das Release nie ab:
+      # Tag, Image und GitHub-Release sind dann schon da. Ein Fehler steht als Warnung und in der Zusammenfassung.
+      - name: Versions-Wache in n8n anstoßen
+        if: vars.COCKPIT_VERSIONSWACHE_URL != ''
+        continue-on-error: true
+        env:
+          TOKEN: ${{ secrets.COCKPIT_NACH_DEPLOY_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+          URL: ${{ vars.COCKPIT_VERSIONSWACHE_URL }}
+        run: |
+          fehler() {
+            echo "::warning::Versions-Wache nicht angestoßen: $1"
+            {
+              echo "### Versions-Wache nicht angestoßen"
+              echo "$1. Der Befund im Cockpit aktualisiert sich spätestens um 06:20."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          test -n "$TOKEN" || fehler "Secret COCKPIT_NACH_DEPLOY_TOKEN fehlt"
+          code=$(curl -sS -m 30 -o /dev/null -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -H 'User-Agent: cockpit-release' \
+            --data "{\"version\":\"$VERSION\"}" "$URL") || fehler "keine Verbindung zu n8n"
+          case "$code" in
+            2??) echo "Versions-Wache angestoßen (HTTP $code)" >> "$GITHUB_STEP_SUMMARY" ;;
+            *) fehler "n8n antwortet mit HTTP $code" ;;
+          esac

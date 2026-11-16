@@ -1,0 +1,65 @@
+# Fragment für /opt/<kuerzel>/compose.yaml — vierter Dienst neben
+# n8n/PostgreSQL/Caddy (Architektur-Vorschlag Abschnitt 3). Einzige Wahrheit
+# für den Dienstblock; wird beim Server-Setup eingefügt, nicht dupliziert.
+#
+# Ersetzen: <KUERZEL>, <DIGEST> (SemVer+Digest aus GHCR, nie ein bewegliches
+# Tag; steht zweimal, in image und COCKPIT_IMAGE_DIGEST), <INSTANZNAME> (etwa
+# den Namen des Betriebs). Die Werte in ${…} kommen aus der `.env` neben der
+# Compose-Datei; Schritt für Schritt steht das in `docs/installation.md`.
+#
+# BETTER_AUTH_SECRET: Signiergeheimnis für Sitzungen (mind. 32 Zeichen,
+# `openssl rand -base64 32`). Je Kundeninstanz eigenständig erzeugen, nie ins
+# Repo, nie zwischen Instanzen teilen. Ein Wechsel entwertet alle Sitzungen.
+
+# SCHEMA (COPI-31): Das Cockpit startet nicht, solange die Datenbank nicht auf dem Stand des Images
+# ist (Exit 3, mit Meldung). Vor dem ERSTEN Start und nach JEDEM Wechsel des Images, in dieser
+# Reihenfolge — `run --rm`, nicht `exec`, weil es ohne Schema keinen laufenden Container gibt:
+#
+#   docker compose run --rm cockpit node dist/cli/index.js migrieren
+#   docker compose up -d cockpit
+#
+# Ausführung durch den Betreuer bzw. das Werkzeug `cockpit-update`, nach der Freigabe des Updates;
+# das Cockpit migriert nicht von selbst. Rückwärts: README, „Schema und Migrationen".
+
+services:
+  cockpit:
+    image: ghcr.io/stefan39/cockpit@<DIGEST>
+    restart: unless-stopped
+    networks:
+      - frontend
+      - backend
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      COCKPIT_DOMAIN: "<KUERZEL>.example.com"
+      DATABASE_URL: "${COCKPIT_DATABASE_URL}"
+      BETTER_AUTH_SECRET: "${COCKPIT_AUTH_SECRET}"
+      # Mail über den vorhandenen mailcow-Zugang. Ohne SMTP_HOST und SMTP_FROM startet das Cockpit zwar,
+      # registriert die Einladungsroute aber nicht — ein Betriebs-Admin käme dann nicht an seinen Zugang.
+      SMTP_HOST: "${COCKPIT_SMTP_HOST}"
+      SMTP_PORT: "${COCKPIT_SMTP_PORT}"
+      SMTP_USER: "${COCKPIT_SMTP_USER}"
+      SMTP_PASS: "${COCKPIT_SMTP_PASS}"
+      SMTP_FROM: "${COCKPIT_SMTP_FROM}"
+      # Selbstmeldung (COPI-39): derselbe Platzhalter wie in der image-Zeile, beim Ersetzen beide zugleich. Ein
+      # Image kann seinen eigenen Digest nicht enthalten; das Cockpit meldet ihn beim Start nach cockpit.instanz,
+      # und daran hängt die Bestätigung eines Updates. Version und Commit trägt das Image selbst.
+      COCKPIT_IMAGE_DIGEST: "<DIGEST>"
+      # Name der Instanz (COPI-43): steht unter der Wortmarke und mobil über dem Seitentitel, wie im Prototyp.
+      COCKPIT_INSTANZ_NAME: "<INSTANZNAME>"
+      # Der Koordinator-Agent in n8n (COPI-54): Webhook und gemeinsames Geheimnis gehören zusammen — beide oder keins,
+      # sonst startet das Cockpit nicht. Ohne beide sagt der Chat, dass kein Assistent angebunden ist. Die Frist
+      # (Sekunden, Standard 120) sagt, ab wann eine ausbleibende Antwort im Verlauf steht.
+      COCKPIT_KOORDINATOR_URL: "${COCKPIT_KOORDINATOR_URL}"
+      COCKPIT_KOORDINATOR_SECRET: "${COCKPIT_KOORDINATOR_SECRET}"
+      COCKPIT_KOORDINATOR_FRIST: "${COCKPIT_KOORDINATOR_FRIST}"
+      # Nachrichten an den Assistenten je Konto und Tag (COPI-57); leer heißt 50.
+      COCKPIT_CHAT_TAGESLIMIT: "${COCKPIT_CHAT_TAGESLIMIT}"
+      # E-Mail-Zweitkanal (COPI-60): Minuten, bis eine dringende, ungelesene Nachricht per E-Mail geht; leer heißt 15.
+      COCKPIT_CHAT_MAIL_NACH_MINUTEN: "${COCKPIT_CHAT_MAIL_NACH_MINUTEN}"
+      # Web Push (COPI-59): das Paar aus `vapid-erzeugen`, beide oder keins. Nie in die Datenbank.
+      COCKPIT_VAPID_PUBLIC_KEY: "${COCKPIT_VAPID_PUBLIC_KEY}"
+      COCKPIT_VAPID_PRIVATE_KEY: "${COCKPIT_VAPID_PRIVATE_KEY}"
+      COCKPIT_VAPID_KONTAKT: "${COCKPIT_VAPID_KONTAKT}"
+    # Kein `ports`-Eintrag — Caddy erreicht den Dienst nur über das
+    # `frontend`-Netz (Architektur-Vorschlag Abschnitt 3).

@@ -1,0 +1,34 @@
+<%/*
+  Eine Team-Liste des Dashboards (COPI-122): ein Modul mit `uebersicht.art: liste` (die Arbeit eines Agenten, etwa Maras
+  Posts der Woche) als kompakte Karte im Stil von „Zu tun" — offene Zeilen zuerst, Status als Pille mit Wort, Kurztext
+  darunter, Fuß-Link aufs Modul. Fremdtexte escaped, nie verlinkt. Angabe: `liste` (aus `dashboardAnsicht`).
+*/%>
+<% const l = it.liste; %>
+<section class="aufgaben" aria-labelledby="team-<%= l.kennung %>">
+  <div class="aufgaben-kopf">
+    <%~ include('./symbol', { name: 'agenten' }) %>
+    <h2 id="team-<%= l.kennung %>"><%= l.titel %></h2>
+    <% if (l.offen > 0) { %><span class="aufgaben-zahl"><%= l.offen %> offen</span><% } %>
+  </div>
+  <% if (!l.verfuegbar) { %>
+  <p class="aufgaben-leer">Dieses Modul ist gerade nicht verfügbar.</p>
+  <% } else if (l.zeilen.length === 0) { %>
+  <p class="aufgaben-leer">Noch keine Einträge.</p>
+  <% } else { %>
+  <ul class="aufgaben-liste">
+    <% for (const zeile of l.zeilen) { %>
+    <li>
+      <a href="<%= zeile.href %>" class="aufgaben-zeile">
+        <span class="aufgaben-zeile-kopf">
+          <span class="aufgaben-titel aufgaben-titel-umbruch"><%= zeile.titel %></span>
+          <span class="pille pille-<%= zeile.status.farbe %>"><span class="punkt punkt-<%= zeile.status.farbe %>" aria-hidden="true"></span><%= zeile.status.wort %></span>
+          <% if (zeile.zeit !== '') { %><span class="aufgaben-zeit"><%= zeile.zeit %></span><% } %>
+        </span>
+        <% if (zeile.text !== '') { %><span class="aufgaben-meta"><%= zeile.text %></span><% } %>
+      </a>
+    </li>
+    <% } %>
+  </ul>
+  <% } %>
+  <div class="aufgaben-fuss"><a href="<%= l.href %>" class="abschnitt-link">Zum Modul<span class="sr-only"> <%= l.titel %></span></a></div>
+</section>

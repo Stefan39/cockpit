@@ -1,0 +1,33 @@
+# Ein Site-Block, zwei Fälle (Kundendomain oder <kuerzel>.example.com), kein
+# Zweig in der Konfiguration (Architektur-Vorschlag Abschnitt 3/13.3).
+#
+# Einsetzen: {$COCKPIT_DOMAIN} als Umgebungsvariable im Caddy-Kontext des
+# Kundenservers setzen (Fall A: eigene Domain des Kunden; Fall B:
+# "<kuerzel>.example.com"). Kein DNS-01, keine Wildcards — A/AAAA je Kunde.
+#
+# /n8n/* bewusst ohne konkreten reverse_proxy hier: die IP-Beschränkung auf
+# Stefan lebt in der servereigenen Caddy-Konfiguration (playbooks/server-setup),
+# nicht in diesem Fragment, damit hier kein Zugriffs-Whitelist-Wert landet.
+
+{$COCKPIT_DOMAIN} {
+    # Öffentlich, nur Webhook-Pfade — n8n bleibt sonst Betreuerwerkzeug.
+    handle /webhook/* {
+        reverse_proxy n8n:5678
+    }
+
+    # IP-beschränkt auf Stefan — konkrete remote_ip-Werte kommen aus der
+    # servereigenen Konfiguration, nicht aus diesem Fragment.
+    handle /n8n/* {
+        reverse_proxy n8n:5678
+    }
+
+    # Alles andere → Cockpit. Bekommt die Wurzel der Domain (Architektur-
+    # Vorschlag Abschnitt 3): das Cockpit ist die Adresse, die der Kunde kennt.
+    # Die Server-Sent Events des Chats (COPI-56) brauchen keine Einstellung:
+    # Caddy reicht text/event-stream ohne Puffer durch.
+    # Sicherheits-Header (HSTS, CSP, …) setzt das Cockpit selbst (COPI-93),
+    # hier also keine header-Direktive — sonst gäbe es zwei Wahrheiten.
+    handle {
+        reverse_proxy cockpit:3000
+    }
+}

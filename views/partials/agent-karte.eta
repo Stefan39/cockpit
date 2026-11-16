@@ -1,0 +1,22 @@
+<%/*
+  Eine Karte der Seite Agenten (COPI-38). Angaben: `karte` und `sicht` (`kunde` oder `betreuer`).
+  Alles wird escaped, nichts wird verlinkt: der Text kommt vom Admin-Agenten und kann Fremdtext enthalten.
+  Kennung und Version gibt es nur in der Betreuersicht: die Karte der Kundensicht hat dafür kein Feld.
+  Seit COPI-113 ist die ganze Karte ein Link auf die Detailseite (der Name ist der Link, seine Fläche deckt die Karte).
+*/%>
+<li class="agent agent-verlinkt">
+  <h2 class="agent-name"><a href="<%= it.karte.href %>" class="agent-link"><%= it.karte.rolle %></a><span class="agent-weiter" aria-hidden="true"><%~ include('./symbol', { name: 'weiter' }) %></span></h2>
+  <% if (it.sicht === 'betreuer') { %>
+  <p class="agent-technik"><code><%= it.karte.kennung %></code> <span class="marke">Version <%= it.karte.version %></span></p>
+  <% } %>
+  <h3 class="agent-label">Grenzen</h3>
+  <% if (it.karte.grenzen.length > 0) { %>
+  <dl class="werte">
+    <% for (const grenze of it.karte.grenzen) { %>
+    <div><dt><%= grenze.name %></dt><dd><%= grenze.wert %></dd></div>
+    <% } %>
+  </dl>
+  <% } else { %>
+  <p class="agent-leer">Keine Grenzen gemeldet.</p>
+  <% } %>
+</li>

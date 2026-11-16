@@ -1,0 +1,53 @@
+<%/*
+  Der App-Rahmen der angemeldeten Seiten (COPI-43), wie im Prototyp: am Desktop eine Sidebar (Wortmarke, Instanzname,
+  Navigation, unten Dark Mode und Abmelden), mobil nur die Navigation als feste Tab-Leiste unten. Dasselbe Markup für
+  beide Größen; das CSS ordnet es an. Angaben: `nav` (aus `navigation()`, src/server/navigation.ts), `instanz` und `cockpitVersion` (COPI-84, global aus
+  `app.render`; unten über dem Dark-Mode-Schalter).
+  Einträge, die es noch nicht gibt (Module), sind ausgegraut und kein Link. Der Chat trägt die Zahl ungelesener
+  Nachrichten (COPI-53), mit Klartext für Screenreader.
+  Seit COPI-108 steht „Mehr" nur in der Tab-Leiste; am Desktop zeigt die Sidebar dieselben Einträge (`nav.mehr`, mit
+  denselben Rechten) direkt als zweite Gruppe „Verwaltung".
+  Angeheftete Module (COPI-121) stehen als Haupteinträge unter „Nachrichten"; neben ihnen steht „Meldungen" nur am
+  Desktop (`nurDesktop`) und mobil unter „Mehr" (dort `nurMobil`, deshalb nicht in „Verwaltung").
+  Der Hinweispunkt (COPI-140, `punkt`): am Desktop an „Einstellungen", mobil an „Mehr" — mit Klartext für Screenreader.
+*/%>
+<aside class="rahmen">
+  <div class="rahmen-marke">
+    <span class="rahmen-name">Cockpit</span>
+    <% if (it.instanz) { %>
+    <span class="rahmen-instanz"><%= it.instanz %></span>
+    <% } %>
+  </div>
+  <nav class="hauptnav" aria-label="Hauptnavigation">
+    <ul class="hauptnav-liste">
+      <% for (const eintrag of it.nav.eintraege) { %>
+      <li<% if (eintrag.nurMobil) { %> class="hauptnav-nur-mobil"<% } else if (eintrag.nurDesktop) { %> class="hauptnav-nur-desktop"<% } %>>
+        <% if (eintrag.folgt) { %>
+        <span class="hauptnav-eintrag hauptnav-folgt" aria-disabled="true"><%~ include('./symbol', { name: eintrag.symbol }) %><span><%= eintrag.text %></span><span class="sr-only"> (folgt)</span></span>
+        <% } else { %>
+        <a href="<%= eintrag.href %>" class="hauptnav-eintrag"<% if (eintrag.aktuell) { %> aria-current="page"<% } %>><%~ include('./symbol', { name: eintrag.symbol }) %><span><%= eintrag.text %></span><% if (eintrag.ungelesen) { %><span class="hauptnav-zahl"><span aria-hidden="true"><%= eintrag.ungelesen > 99 ? '99+' : eintrag.ungelesen %></span><span class="sr-only">, <%= eintrag.ungelesen %> <%= eintrag.zahlWort ?? 'ungelesen' %></span></span><% } %><% if (eintrag.punkt) { %><span class="nav-punkt"><span class="sr-only">, Update verfügbar</span></span><% } %></a>
+        <% } %>
+      </li>
+      <% } %>
+    </ul>
+  </nav>
+  <% if (it.nav.mehr.length > 0) { %>
+  <nav class="verwaltungsnav" aria-label="Verwaltung">
+    <p class="verwaltungsnav-titel">Verwaltung</p>
+    <ul class="verwaltungsnav-liste">
+      <% for (const eintrag of it.nav.mehr.filter((kandidat) => !kandidat.nurMobil)) { %>
+      <li><a href="<%= eintrag.href %>" class="hauptnav-eintrag"<% if (eintrag.aktuell) { %> aria-current="page"<% } %>><%~ include('./symbol', { name: eintrag.symbol }) %><span><%= eintrag.text %></span><% if (eintrag.punkt) { %><span class="nav-punkt"><span class="sr-only">, Update verfügbar</span></span><% } %></a></li>
+      <% } %>
+    </ul>
+  </nav>
+  <% } %>
+  <div class="rahmen-fuss">
+    <%~ include('./versionszeile', { version: it.cockpitVersion, hinweis: it.nav.updateHinweis, tippId: 'update-tipp-rahmen' }) %>
+    <%~ include('./darstellung', { pfad: it.nav.pfad, art: 'breit' }) %>
+    <% if (it.nav.abmelden) { %>
+    <form method="post" action="/abmelden">
+      <button type="submit" class="rahmen-knopf"><%~ include('./symbol', { name: 'abmelden' }) %><span>Abmelden</span></button>
+    </form>
+    <% } %>
+  </div>
+</aside>

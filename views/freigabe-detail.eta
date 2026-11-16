@@ -1,0 +1,65 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Freigabe-Detail (COPI-139, Teil 1, nur lesen). Angaben: `detail` (aus `detailBauen`), `hinweis`. Deutsch zuerst, das Original darunter
+  als fremder Inhalt abgesetzt, daneben der Entwurf mit Kontroll-Rückübersetzung. Alles escaped, nichts automatisch
+  verlinkt: die Quelladresse steht als Text, der Link öffnet ausdrücklich in neuem Tab (`rel` ohne Referrer).
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: it.zurueck }) %>
+<% if (it.hinweis) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.hinweis }) %>
+<% } else { const d = it.detail; %>
+<div class="meldungen-seite">
+  <% if (it.meldung) { %>
+  <%~ include('partials/hinweis', { art: it.meldung.art, text: it.meldung.text }) %>
+  <% if (it.meldung.adresse) { %>
+  <p class="meldungen-meta">Antwort: <code><%= it.meldung.adresse %></code><% if (it.meldung.link) { %> · <a href="<%= it.meldung.link %>" target="_blank" rel="noopener noreferrer nofollow">Antwort öffnen</a><% } %></p>
+  <% } %>
+  <p class="meldungen-meta"><a href="/freigaben">Zurück zur Liste</a></p>
+  <% } %>
+  <% if (d) { %>
+  <p class="meldungen-titel"><%= d.quelle %><% if (d.titel) { %> · <%= d.titel %><% } %></p>
+  <p class="meldungen-meta"><%= d.quelleTyp %> · <%= d.einordnung %> · <%= d.alter %> · <%= d.agent %> · <span class="marke"><%= d.status %></span></p>
+  <% if (d.adresseText) { %>
+  <p class="meldungen-meta">Quelle: <code><%= d.adresseText %></code><% if (d.adresseLink) { %> · <a href="<%= d.adresseLink %>" target="_blank" rel="noopener noreferrer nofollow">Quelle öffnen</a><% } %></p>
+  <% } %>
+  <div class="freigabe-spalten">
+    <section>
+      <h2><%= d.deutschIstOriginal ? 'Text (Original)' : 'Deutsch' %></h2>
+      <p class="freigabe-text"><%= d.deutsch %></p>
+      <h3>Original (fremder Inhalt)</h3>
+      <blockquote class="freigabe-fremd"><%= d.original %></blockquote>
+    </section>
+    <section>
+      <h2>Entwurf</h2>
+      <% if (d.entwurf) { %>
+      <p class="freigabe-text"><%= d.entwurf %></p>
+      <h3>Kontroll-Rückübersetzung</h3>
+      <p class="freigabe-text"><%= d.entwurfDe ?? 'Keine Rückübersetzung geliefert.' %></p>
+      <% } else { %>
+      <p class="freigabe-text">Kein Entwurf vorhanden.</p>
+      <% } %>
+    </section>
+  </div>
+  <% if (it.aktionen && d.offen && d.entwurf) { const aus = it.gesperrt ? ' disabled' : ''; const aktion = '/freigaben/' + encodeURIComponent(d.id); %>
+  <section aria-labelledby="aktionen-titel">
+    <h2 id="aktionen-titel">Entscheidung</h2>
+    <% if (it.gesperrt) { %><p class="meldungen-meta">Die Knöpfe sind gesperrt.</p><% } %>
+    <form method="post" action="<%= aktion %>/senden" class="formular">
+      <%~ include('partials/csrf-felder', { csrf: it.csrf.senden }) %>
+      <button type="submit" class="knopf"<%~ aus %>>Senden</button>
+    </form>
+    <form method="post" action="<%= aktion %>/aendern" class="formular">
+      <%~ include('partials/csrf-felder', { csrf: it.csrf.aendern }) %>
+      <label for="freigabe-text">Text ändern</label>
+      <textarea id="freigabe-text" name="text" rows="8" maxlength="10000" required<%~ aus %>><%= it.eingabe ?? d.entwurf %></textarea>
+      <button type="submit" class="knopf"<%~ aus %>>Ändern und senden</button>
+    </form>
+    <form method="post" action="<%= aktion %>/verwerfen" class="formular">
+      <%~ include('partials/csrf-felder', { csrf: it.csrf.verwerfen }) %>
+      <button type="submit" class="knopf"<%~ aus %>>Verwerfen</button>
+    </form>
+  </section>
+  <% } %>
+  <% } %>
+</div>
+<% } %>

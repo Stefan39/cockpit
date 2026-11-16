@@ -1,0 +1,28 @@
+<% layout('layout') %>
+<h1>Zweiter Faktor</h1>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<% if (it.passkeyAngeboten) { %>
+<%/* Verborgen, bis das Skript da ist und der Browser WebAuthn kann (COPI-27):
+     ohne JavaScript bleiben die Codes. */%>
+<form method="post" action="/anmelden/passkey/pruefen" data-passkey-anmelden
+      data-optionen-url="/anmelden/passkey/optionen" class="formular" hidden>
+  <p>Mit Fingerabdruck, Gesicht oder der PIN des Geräts bestätigen.</p>
+  <p role="alert" data-passkey-meldung class="meldung" hidden></p>
+  <input type="hidden" name="antwort" value="" />
+  <%~ include('partials/knopf', { text: 'Mit Passkey anmelden' }) %>
+</form>
+<script type="module" src="/anmelden/passkey/skript.js"></script>
+<% } %>
+<p>
+  Bitte den sechsstelligen Code aus der Authenticator-App eingeben. Ein
+  Ersatzcode aus der Einrichtung geht auch — er gilt dann nur dieses eine Mal.
+</p>
+<form method="post" action="/anmelden/code" class="formular">
+  <%~ include('partials/feld', { id: 'code', name: 'code', label: 'Code', autocomplete: 'one-time-code', autocapitalize: 'off', spellcheck: 'false' }) %>
+  <%~ include('partials/knopf', { text: 'Anmelden' }) %>
+</form>
+<form method="post" action="/abmelden" class="abschnitt">
+  <%~ include('partials/knopf', { text: 'Abbrechen', art: 'sekundaer' }) %>
+</form>

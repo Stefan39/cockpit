@@ -1,0 +1,33 @@
+<%/*
+  Die Statuskarte der Übersicht (COPI-37): ein Satz und der Text der Kachel, die ihn ausgelöst hat.
+  Angabe: `status` mit `farbe` (`rot`, `gelb`, `gruen`, `leer`), `satz` und `detail`. Alles wird escaped.
+  Die Farbe steht nie allein: der Satz sagt, was los ist. Mit `aktion` (die Übersicht, COPI-43) bei Rot und Gelb der
+  Knopf „Jetzt ansehen" des Prototyps: er führt zu `ziel`, ohne Angabe zu den Meldungen.
+  Das Dashboard nutzt seit COPI-122 die Statuszeile (`partials/statuszeile`), nicht mehr diese Karte.
+*/%>
+<% const knopf = it.aktion && (it.status.farbe === 'rot' || it.status.farbe === 'gelb'); %>
+<section class="status status-<%= it.status.farbe %>" aria-labelledby="status-satz">
+  <span class="status-symbol" aria-hidden="true">
+    <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <% if (it.status.farbe === 'rot' || it.status.farbe === 'gelb') { %>
+      <path d="M12 4.5 21 19.5H3Z" />
+      <path d="M12 10v4" />
+      <path d="M12 16.6h.01" />
+      <% } else if (it.status.farbe === 'gruen') { %>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12.5l2.7 2.7L16 9.5" />
+      <% } else { %>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <path d="M12 7.8h.01" />
+      <% } %>
+    </svg>
+  </span>
+  <div class="min-w-0">
+    <p id="status-satz" class="status-satz"><%= it.status.satz %></p>
+    <p class="status-detail"><%= it.status.detail %></p>
+    <% if (knopf) { %>
+    <a href="<%= it.ziel ?? '/meldungen' %>" class="status-aktion status-aktion-<%= it.status.farbe %>">Jetzt ansehen</a>
+    <% } %>
+  </div>
+</section>

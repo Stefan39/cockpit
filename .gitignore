@@ -1,0 +1,31 @@
+# Secrets — nie ins Repo
+.cowork/
+.env
+*.env
+docker/dev-certs/
+
+# IDE
+.idea/
+
+# Node (greift ab E1, schon jetzt harmlos drin)
+node_modules/
+dist/
+build/
+coverage/
+.jscpd-report/
+report/
+
+# OS
+.DS_Store
+
+# Gebaute Assets (COPI-30): Stylesheet und Schriften, entstehen mit `npm run assets`
+assets/gebaut/
+
+# Geheimnis der Entwicklung (COPI-32): entsteht beim ersten Start ohne BETTER_AUTH_SECRET
+.cockpit-dev-secret
+
+# Laufzeitzustand von `./dev up` (COPI-33): PID-Datei der Dienste
+.dev/
+
+# Blob-Berichte der Test-Shards (COPI-72): entstehen mit --reporter=blob
+.vitest/

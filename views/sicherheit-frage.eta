@@ -1,0 +1,20 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Rückfrage vor einer Änderung auf `/sicherheit` (COPI-94): einen Passkey oder die Authenticator-App entfernen,
+  neue Ersatzcodes erzeugen. Angaben: `bestaetigt` (Text des Hinweises), `frage`, `saetze`, `aktion` (Ziel des
+  Formulars), `knopf` (Beschriftung) und `gefahr` (Entfernen: Schrift in Gefahrfarbe). Erst dieses Formular ändert.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/sicherheit', ziel: 'Anmeldung & Sicherheit' } }) %>
+<%~ include('partials/hinweis', { art: 'ok', text: it.bestaetigt }) %>
+<section class="bereich" aria-labelledby="frage-titel">
+  <h2 id="frage-titel" class="bereich-name"><%= it.frage %></h2>
+  <% for (const satz of it.saetze) { %>
+  <p class="bereich-satz"><%= satz %></p>
+  <% } %>
+  <form method="post" action="<%= it.aktion %>" class="knopf-reihe">
+    <button type="submit" class="knopf <%= it.gefahr ? 'knopf-sekundaer knopf-gefahr' : 'knopf-primaer' %>"><%= it.knopf %></button>
+    <a href="/sicherheit" class="knopf knopf-sekundaer">Abbrechen</a>
+  </form>
+</section>
+</div>

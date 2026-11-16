@@ -1,0 +1,5 @@
+<%/*
+  Die Felder der signierten Bestätigung (CSRF) eines Freigabe-Formulars. Angabe: `csrf` mit `bis` und `token`.
+*/%>
+<input type="hidden" name="bis" value="<%= it.csrf.bis %>">
+<input type="hidden" name="token" value="<%= it.csrf.token %>">

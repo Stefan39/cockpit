@@ -1,0 +1,4 @@
+<%/* Blöcke der einfachen Formatierung (COPI-125, COPI-131, `src/module/einfacher-text.ts`). Jeder Text maskiert; fett und kursiv nur als <strong>/<em> um maskierten Text. */%>
+<% for (const block of it.bloecke) { %>
+<% if (block.art === 'ueberschrift') { %><h3 class="einfach-ueberschrift"><%~ include('./text-teile', { teile: block.text }) %></h3><% } else if (block.art === 'liste') { %><ul class="einfach-liste"><% for (const punkt of block.punkte) { %><li><%~ include('./text-teile', { teile: punkt }) %></li><% } %></ul><% } else { %><p class="einfach-absatz"><%~ include('./text-teile', { teile: block.text }) %></p><% } %>
+<% } %>

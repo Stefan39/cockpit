@@ -1,0 +1,87 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Übersicht (COPI-37, aufgebaut wie der Prototyp seit COPI-43): links die Statuskarte mit „Jetzt ansehen" und die
+  Kacheln der Agenten, rechts (ab xl; darunter unter den Kacheln) „Letzte Meldungen". Angaben: `sicht`, `uebersicht`
+  (`status`, `kacheln`; im Dashboard nur für den Betreuer), `letzteMeldungen` (aus `meldungenAnsicht`, höchstens drei).
+
+  Mit `dashboard` (COPI-81, aus `dashboardAnsicht`; nur wenn der Zugang ein Modul mit `uebersicht:` sieht): Stand,
+  Zustandsband, vier Kennzahlen, je Modul ein Kartenraster, darunter das Wochendiagramm (2/3) und „Letzte Meldungen"
+  (1/3), für den Betreuer zuletzt die Wachen mit Rohbefund. Diagramme sind Inline-SVG ohne `style`-Attribut.
+
+  Seit COPI-122 (freigegebener Entwurf, Stefan 08.10.2026): Statuszeile statt Zustandsband, darunter die Kennzahlen,
+  die Reihe „Zu tun" (`zuTun`, auch ohne Dashboard), je Modul mit Karten ein aufklappbarer Bereich (grüne Karten als
+  Chips), eine Reihe aus Kennzahlen-Karten, Woche und „Letzte Meldungen", die Team-Reihe (`dashboard.listen`) und die
+  Wachen zugeklappt.
+
+  `kennzahlenKarten` (COPI-98, aus `kennzahlenKartenLesen`): je Kennzahlen-Modul mit `uebersicht:` ein Abschnitt mit
+  einer Karte — im Dashboard nach den Modul-Abschnitten, sonst unter den Kacheln der Agenten (`kennzahlenStand` aus der Route).
+*/%>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, stand: it.stand, aktualisieren: 60 }) %>
+<% if (it.dashboard) { %>
+<% const d = it.dashboard; %>
+<div class="dashboard">
+  <%~ include('partials/statuszeile', { zustand: d.zustand }) %>
+  <ul class="kennzahlen" aria-label="Kennzahlen">
+    <li class="kennzahl">
+      <span class="kennzahl-label">Dienste in Ordnung</span>
+      <span class="kennzahl-wert"><%= d.kennzahlen.dienste %></span>
+    </li>
+    <li class="kennzahl">
+      <span class="kennzahl-label">Verfügbarkeit 24 Std.</span>
+      <span class="kennzahl-wert"><%= d.kennzahlen.verfuegbarkeit %></span>
+      <%~ include('partials/band', { band: d.kennzahlen.verfuegbarkeitBand, klasse: 'band-duenn' }) %>
+    </li>
+    <li class="kennzahl">
+      <span class="kennzahl-label">Offene Punkte</span>
+      <span class="kennzahl-wert<%= d.kennzahlen.offen > 0 ? ' kennzahl-wert-rot' : '' %>"><%= d.kennzahlen.offen %></span>
+      <span class="kennzahl-zusatz"><%= d.kennzahlen.offenZusatz %></span>
+    </li>
+    <li class="kennzahl">
+      <span class="kennzahl-label">Letzte Prüfung</span>
+      <span class="kennzahl-wert"><%= d.kennzahlen.letztePruefung %></span>
+    </li>
+  </ul>
+  <%~ include('partials/zu-tun', { spalten: it.zuTun }) %>
+  <% for (const abschnitt of d.abschnitte) { %>
+  <%~ include('partials/dashboard-bereich', { abschnitt: abschnitt }) %>
+  <% } %>
+  <div class="dashboard-reihe">
+    <%~ include('partials/kennzahlen-abschnitte', { karten: it.kennzahlenKarten, stand: d.stand }) %>
+    <%~ include('partials/woche-diagramm', { woche: d.woche }) %>
+    <%~ include('partials/letzte-meldungen', { meldungen: it.letzteMeldungen, leer: 'Noch keine Meldungen.' }) %>
+  </div>
+  <% if (d.listen.length > 0) { %>
+  <div class="team-reihe">
+    <% for (const liste of d.listen) { %>
+    <%~ include('partials/team-liste', { liste: liste }) %>
+    <% } %>
+  </div>
+  <% } %>
+  <% if (it.sicht === 'betreuer' && it.uebersicht && it.uebersicht.kacheln.length > 0) { %>
+  <details class="klappbereich" data-merken="wachen">
+    <summary class="klappbereich-kopf">
+      <h2 id="agenten">Alle Wachen · nur Betreuer</h2>
+      <span class="klappbereich-info"><span><%= it.uebersicht.kacheln.length %> Wachen<% for (const [farbe, wort] of [['rot', 'rot'], ['gelb', 'gelb'], ['gruen', 'grün']]) { const n = it.uebersicht.kacheln.filter((kachel) => kachel.farbe === farbe).length; if (n > 0) { %> · <%= n %> <%= wort %><% } } %></span></span>
+      <span class="aufklapp-pfeil aufklapp-rechts" aria-hidden="true"></span>
+    </summary>
+    <div class="klappbereich-inhalt">
+      <ul class="kacheln kacheln-betreuer">
+        <% for (const kachel of it.uebersicht.kacheln) { %>
+        <%~ include('partials/kachel', { kachel: kachel, sicht: it.sicht }) %>
+        <% } %>
+      </ul>
+    </div>
+  </details>
+  <% } %>
+</div>
+<% } else { %>
+<div class="uebersicht">
+  <div class="uebersicht-haupt">
+    <%~ include('partials/status-karte', { status: it.uebersicht.status, aktion: true }) %>
+    <%~ include('partials/zu-tun', { spalten: it.zuTun ?? [] }) %>
+    <%~ include('partials/wachen-kacheln', { titel: 'Agenten', sicht: it.sicht, kacheln: it.uebersicht.kacheln }) %>
+    <%~ include('partials/kennzahlen-abschnitte', { karten: it.kennzahlenKarten, stand: it.kennzahlenStand }) %>
+  </div>
+  <%~ include('partials/letzte-meldungen', { meldungen: it.letzteMeldungen }) %>
+</div>
+<% } %>

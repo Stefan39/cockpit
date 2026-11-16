@@ -1,0 +1,37 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die frische Bestätigung (COPI-94): bevor `/sicherheit` etwas ändert, ein Faktor, den das Konto schon hat. Angaben:
+  `weiter` (die geprüfte Seite, zu der es danach geht), `anlass` (ein Satz, worum es geht), `passkeyMoeglich` (das Konto
+  hat einen Passkey und die Instanz eine feste Basis-URL) und `fehler`.
+
+  Der Passkey-Teil ist verborgen, bis das Skript da ist und der Browser WebAuthn kann (`assets/js/passkey.js`, dasselbe
+  Formular wie bei der Anmeldung); ohne Skript bleibt der Code. Nie das Passwort: es allein genügt hier nicht.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/sicherheit', ziel: 'Anmeldung & Sicherheit' } }) %>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<section class="bereich" aria-labelledby="bestaetigen-titel">
+  <h2 id="bestaetigen-titel" class="bereich-name">Bitte bestätigen Sie, dass Sie es sind</h2>
+  <p class="bereich-satz"><%= it.anlass %> Dafür braucht es einen Faktor, den Sie schon haben. Die Bestätigung gilt 10 Minuten für diese Sitzung.</p>
+  <% if (it.passkeyMoeglich) { %>
+  <form method="post" action="/sicherheit/bestaetigen/passkey" data-passkey-anmelden data-optionen-url="/sicherheit/bestaetigen/passkey/optionen" class="formular" hidden>
+    <input type="hidden" name="weiter" value="<%= it.weiter %>" />
+    <input type="hidden" name="antwort" value="" />
+    <p role="alert" data-passkey-meldung class="meldung" hidden></p>
+    <div class="knopf-reihe"><button type="submit" class="knopf knopf-primaer">Mit Passkey bestätigen</button></div>
+  </form>
+  <script type="module" src="/sicherheit/skript.js"></script>
+  <p class="bereich-satz">Kein Passkey auf diesem Gerät? Dann mit einem Code:</p>
+  <% } %>
+  <form method="post" action="/sicherheit/bestaetigen/code" class="formular">
+    <input type="hidden" name="weiter" value="<%= it.weiter %>" />
+    <%~ include('partials/feld', { id: 'code', name: 'code', label: 'Code aus der Authenticator-App oder Ersatzcode', autocomplete: 'one-time-code', autocapitalize: 'off', spellcheck: 'false', mono: true, hilfe: 'Sechs Ziffern oder ein Ersatzcode wie xxxxx-xxxxx. Ein Ersatzcode ist danach verbraucht.' }) %>
+    <div class="knopf-reihe">
+      <button type="submit" class="knopf knopf-sekundaer">Mit Code bestätigen</button>
+      <a href="/sicherheit" class="knopf knopf-sekundaer">Abbrechen</a>
+    </div>
+  </form>
+</section>
+</div>

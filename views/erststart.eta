@@ -1,0 +1,13 @@
+<% layout('layout') %>
+<h1>Cockpit einrichten</h1>
+<p>Dies ist die einmalige Einrichtung des ersten Zugangs.</p>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<form method="post" action="/erststart/<%= it.token %>" class="formular">
+  <%~ include('partials/feld', { id: 'email', name: 'email', typ: 'email', label: 'E-Mail-Adresse (Anmeldename)', autocomplete: 'username' }) %>
+  <%~ include('partials/feld', { id: 'passwort', name: 'passwort', typ: 'password', label: `Passwort (mindestens ${it.mindestlaenge} Zeichen)`, minlength: it.mindestlaenge, autocomplete: 'new-password' }) %>
+  <%~ include('partials/feld', { id: 'passwortWiederholung', name: 'passwortWiederholung', typ: 'password', label: 'Passwort wiederholen', minlength: it.mindestlaenge, autocomplete: 'new-password' }) %>
+  <%~ include('partials/knopf', { text: 'Zugang anlegen' }) %>
+</form>
+<p>Im nächsten Schritt wird der zweite Faktor (TOTP) eingerichtet.</p>

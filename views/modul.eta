@@ -1,0 +1,67 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Zeilen eines Moduls (COPI-78), in zwei Darstellungen (`darstellung`, COPI-82; Standard `liste`):
+
+  **`liste`** — die Pflichtspalten `titel` (Zeilentext), `status` (Punkt + Wort) und `aktualisiert_am`
+  (formatiert), aus der geprüften View. Jede Zeile verlinkt auf ihre Detailseite. Angaben: `kennung`,
+  `verfuegbar`, `zeilen` (aus `modulListeAnsicht`). Am Desktop wie im Prototyp „Buchungen" (Review COPI-78):
+  links die Liste (`partials/modul-liste`, geteilt mit `modul-detail.eta`), rechts ein ruhiger Leerzustand,
+  solange keine Zeile gewählt ist. Mobil unverändert nur die Liste — der rechte Bereich ist dort ausgeblendet
+  (`.modul-splitt-rechts-nur-lg`).
+
+  **`kacheln`** — freigegebener Entwurf „Module › Server & Dienste": Kopf mit Pfad und „Stand: …"
+  (`partials/seiten-kopf`, `krume`/`stand`), Filter-Chips ohne Skript (`?status=`, `chips` aus `kachelChips`,
+  `gefiltert`) und das Kartenraster (`kacheln` aus `kachelnAnsicht`/`kachelnGefiltert`, `partials/modul-kachel`).
+  Die Detailseite bleibt unverändert (`modul-detail.eta` zeigt links immer die kompakte Liste).
+
+  Der Kopf trägt in beiden Darstellungen „Version N · eingespielt am TT.MM.JJJJ" (`versionText`, COPI-84) als sichtbaren Text.
+
+  Moduldaten kommen aus einer Fach-View, nicht aus dem Cockpit selbst: alles wird escaped, nichts automatisch
+  verlinkt (dieselbe Regel wie bei Gästeinhalten im Chat, JAC-577).
+
+  Scheitert die erneute Katalogprüfung (die View kann sich seit dem Einspielen per `CREATE OR REPLACE VIEW`
+  verändert haben), gibt es weder Liste/Kacheln noch Leerzustand, nur den neutralen Hinweis — Einzelheiten
+  stehen nur im Log.
+*/%>
+<% if (it.darstellung === 'kacheln') { %>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, krume: it.krume, stand: it.stand, unterzeile: it.versionText, zurueck: it.zurueck, aktualisieren: 60 }) %>
+<% if (!it.verfuegbar) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: 'Dieses Modul ist gerade nicht verfügbar.' }) %>
+<% } else { %>
+<nav class="modul-chips" aria-label="Filter">
+  <% for (const chip of it.chips) { %>
+  <a href="<%= chip.href %>" class="modul-chip<% if (chip.farbe) { %> modul-chip-<%= chip.farbe %><% } %>"<% if (chip.aktuell) { %> aria-current="true"<% } %>><% if (chip.farbe) { %><span class="punkt punkt-<%= chip.farbe %>" aria-hidden="true"></span><% } %><%= chip.text %></a>
+  <% } %>
+</nav>
+<% if (it.kacheln.length === 0) { %>
+<% if (it.gefiltert) { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Keine passenden Einträge', detail: 'Zu diesem Filter gibt es nichts.' } }) %>
+<% } else { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch keine Einträge', detail: 'Sobald es hier etwas gibt, erscheint es in diesem Raster.' } }) %>
+<% } %>
+<% } else { %>
+<ul class="modul-kacheln">
+  <% for (const kachel of it.kacheln) { %>
+  <%~ include('partials/modul-kachel', { kachel: kachel }) %>
+  <% } %>
+</ul>
+<% } %>
+<% } %>
+<% } else { %>
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, unterzeile: it.versionText, zurueck: it.zurueck, aktualisieren: 60 }) %>
+<% if (!it.verfuegbar) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: 'Dieses Modul ist gerade nicht verfügbar.' }) %>
+<% } else { %>
+<div class="modul-splitt">
+  <div class="modul-splitt-liste">
+    <%~ include('partials/modul-liste', { zeilen: it.zeilen }) %>
+  </div>
+  <div class="modul-splitt-rechts modul-splitt-rechts-nur-lg">
+    <div class="modul-leer">
+      <%~ include('partials/symbol', { name: 'module' }) %>
+      <p>Wählen Sie links einen Eintrag aus.</p>
+    </div>
+  </div>
+</div>
+<% } %>
+<% } %>

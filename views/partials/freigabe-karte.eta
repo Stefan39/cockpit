@@ -1,0 +1,76 @@
+<%/*
+  Die Entwurfskarte der Detailseite (COPI-90, freigegebener Entwurf „Antwort freigeben"): die jüngste Fassung des
+  Antwortentwurfs mit Empfänger, Betreff und Text, dazu je Zustand (`freigabe.art`) genau die Knöpfe, die gehen:
+
+    offen        — „Freigeben" (Link auf die Rückfrage, ohne Skript) und „Selbst übernehmen" (`uebernehmen`, Formular)
+    bestaetigen  — Rückfrage mit „Ja, freigeben" (Formular mit signierter Bestätigung, Fassung und Hash) und „Abbrechen"
+    freigegeben  — wer wann; „Freigabe zurückziehen" nur für den, der darf
+    gesendet     — Nachweis: wann gesendet, wer freigegeben hat
+    uebernommen  — ein Mensch hat den Vorgang übernommen: kein Freigeben, der Agent sendet hier nicht
+
+  `freigabe.veraltet`: eine ältere Fassung war freigegeben — die Freigabe gilt für die neue nicht. Der Entwurf ist Text des
+  Agenten: escaped, nie verlinkt, Zeilenumbrüche per CSS.
+*/%>
+<% const f = it.freigabe; %>
+<% const offen = f.art === 'offen' || f.art === 'bestaetigen'; %>
+<section class="freigabe-karte<% if (offen) { %> freigabe-karte-offen<% } %>" aria-labelledby="freigabe-titel">
+  <div class="freigabe-kopf">
+    <span class="freigabe-kopf-links"><%~ include('./symbol', { name: 'stift' }) %><span><span class="freigabe-titel" id="freigabe-titel">Antwortentwurf</span><span class="freigabe-fassung">Fassung <%= f.fassung %></span></span></span>
+    <% if (f.art === 'gesendet') { %><span class="freigabe-marke freigabe-marke-ok">Gesendet</span>
+    <% } else if (f.art === 'freigegeben') { %><span class="freigabe-marke freigabe-marke-ok">Freigegeben</span>
+    <% } else if (f.art === 'uebernommen') { %><span class="freigabe-marke">Übernommen</span>
+    <% } else { %><span class="freigabe-marke freigabe-marke-warten"><%= f.veraltet ? 'Neue Fassung · Freigabe nötig' : 'Wartet auf Freigabe' %></span><% } %>
+  </div>
+  <% if (f.veraltet && offen) { %>
+  <p class="freigabe-veraltet"><%~ include('./symbol', { name: 'warnung' }) %><span>Der Entwurf wurde nach der Freigabe von Fassung <%= f.veraltet.fassung %> geändert. Die Freigabe gilt für die neue Fassung nicht — gesendet wird nur, was freigegeben ist.</span></p>
+  <% } %>
+  <% if (f.empfaenger || f.betreff) { %>
+  <dl class="freigabe-meta">
+    <% if (f.empfaenger) { %><div><dt>An:</dt><dd><%= f.empfaenger %></dd></div><% } %>
+    <% if (f.betreff) { %><div><dt>Betreff:</dt><dd><%= f.betreff %></dd></div><% } %>
+  </dl>
+  <% } %>
+  <p class="freigabe-text"><%= f.text %></p>
+  <% if (f.art === 'offen') { %>
+  <div class="freigabe-fuss">
+    <% if (f.freigebenHref) { %><a href="<%= f.freigebenHref %>" class="knopf knopf-primaer knopf-mit-symbol"><%~ include('./symbol', { name: 'senden' }) %>Freigeben</a><% } %>
+    <% if (it.uebernehmen) { %>
+    <form method="post" action="<%= it.uebernehmen.href %>">
+      <input type="hidden" name="bis" value="<%= it.uebernehmen.bis %>">
+      <input type="hidden" name="token" value="<%= it.uebernehmen.token %>">
+      <button type="submit" class="knopf knopf-sekundaer knopf-mit-symbol"><%~ include('./symbol', { name: 'uebernehmen' }) %>Selbst übernehmen</button>
+    </form>
+    <% } %>
+    <p class="freigabe-hinweis">Der Agent sendet erst nach der Freigabe — genau diesen Text, beim nächsten Lauf. Ändert er den Entwurf danach, verfällt die Freigabe.</p>
+  </div>
+  <% } else if (f.art === 'bestaetigen' && f.bestaetigen) { %>
+  <form method="post" action="<%= f.bestaetigen.href %>" class="freigabe-band freigabe-band-frage">
+    <input type="hidden" name="bis" value="<%= f.bestaetigen.bis %>">
+    <input type="hidden" name="token" value="<%= f.bestaetigen.token %>">
+    <input type="hidden" name="fassung" value="<%= f.bestaetigen.fassung %>">
+    <input type="hidden" name="hash" value="<%= f.bestaetigen.hash %>">
+    <p><strong>Antwort<% if (f.empfaenger) { %> an <%= f.empfaenger %><% } %> freigeben?</strong> <span>Der Agent sendet Fassung <%= f.fassung %> unverändert. Bis zum Versand lässt sich die Freigabe zurückziehen.</span></p>
+    <div class="freigabe-knoepfe">
+      <button type="submit" class="knopf knopf-primaer knopf-mit-symbol"><%~ include('./symbol', { name: 'senden' }) %>Ja, freigeben</button>
+      <a href="<%= f.abbrechenHref %>" class="knopf knopf-sekundaer">Abbrechen</a>
+    </div>
+  </form>
+  <% } else if (f.art === 'freigegeben') { %>
+  <div class="freigabe-band freigabe-band-ok" role="status">
+    <p><%~ include('./symbol', { name: 'uhr' }) %><span><strong>Freigegeben von <%= f.freigabe.von %> um <%= f.freigabe.am %>.</strong> <span>Der Agent sendet beim nächsten Lauf.</span></span></p>
+    <% if (f.zurueckziehen) { %>
+    <form method="post" action="<%= f.zurueckziehen.href %>">
+      <input type="hidden" name="bis" value="<%= f.zurueckziehen.bis %>">
+      <input type="hidden" name="token" value="<%= f.zurueckziehen.token %>">
+      <input type="hidden" name="fassung" value="<%= f.zurueckziehen.fassung %>">
+      <input type="hidden" name="hash" value="<%= f.zurueckziehen.hash %>">
+      <button type="submit" class="knopf knopf-sekundaer knopf-gefahr">Freigabe zurückziehen</button>
+    </form>
+    <% } %>
+  </div>
+  <% } else if (f.art === 'gesendet') { %>
+  <p class="freigabe-band freigabe-band-ok" role="status"><%~ include('./symbol', { name: 'ok' }) %><span><strong>Gesendet um <%= f.gesendet %>.</strong><% if (f.freigabe) { %> <span>Freigegeben von <%= f.freigabe.von %> um <%= f.freigabe.am %> · Fassung <%= f.freigabe.fassung %></span><% } %></span></p>
+  <% } else if (f.art === 'uebernommen') { %>
+  <p class="freigabe-band" role="status"><%~ include('./symbol', { name: 'schloss' }) %><span>Der Vorgang ist übernommen: Der Agent sendet hier nicht, eine Freigabe ist nicht nötig.</span></p>
+  <% } %>
+</section>

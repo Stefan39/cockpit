@@ -1,0 +1,53 @@
+# Demo-Modul „Auswahl" (COPI-91): Vorschläge eines Assistenten zur View `docs/demo/v_modul_auswahl.sql` über den
+# Fachtabellen aus `docs/demo/fach/auswahl/`. Für den Betriebs-Admin (Betreuer geben sich den Zugriff per
+# `modul-freigabe`, COPI-134). Der Link zum Vorschlag und zum Eintrag im Fremdsystem ist die einzige Ausnahme von
+# „nie verlinken" und gilt nur für die Domains der Liste (Entscheidung vom 06.10.2026).
+# Entscheiden (Eingriff `entscheiden`): Ein Mensch entscheidet im Cockpit, der Assistent fragt die Entscheidungen ab
+# (`GET /intern/vorgaenge/entscheidungen`), schreibt bei „Vormerken“ einen Entwurf (Schritt `bewerbung`)
+# und legt bei „Erledigt“ den Eintrag im Fremdsystem an (Schritt `beworben` mit `adminUrl`).
+# „Erledigt“ geht auch direkt aus „offen“ (COPI-225): für Vorgänge, die außerhalb des Cockpits abgeschickt wurden.
+# Bewusst ohne Eingriff `uebernehmen` (COPI-226): Der Assistent sendet nichts selbst, die Übernahme-Sperre hätte keine Wirkung.
+# Vollständiger Eingang (COPI-240): der Assistent meldet auch Aussortiertes mit Typ und Score, die View zeigt es nie an.
+# Stufen (COPI-244): kommen aus dem Fremdsystem über n8n und ändern den Stand nur als Zusatz („Erledigt, Stufe: Interview“).
+# Braucht Cockpit ab v0.17.0 (Format `link`, `statuswoerter`, Spalte `marke`, Eingriff `entscheiden`).
+cockpit:
+  kennung: auswahl
+  menuename: "Auswahl"
+  ansicht: liste-detail
+  view: v_modul_auswahl
+  spalten:
+    - { name: stand, label: "Stand" }
+    - { name: kategorie, label: "Typ" }
+    - { name: plattform, label: "Quelle" }
+    - { name: auftraggeber, label: "Anbieter" }
+    - { name: honorar, label: "Wert" }
+    - { name: umfang, label: "Umfang" }
+    - { name: ort, label: "Ort" }
+    - { name: gefunden_am, label: "Gefunden", format: zeitpunkt }
+    - { name: quelle, label: "Gemeldet von" }
+    - { name: url, label: "Vorschlag", format: link, domains: [example.com, example.org] }
+    - { name: lead_url, label: "Eintrag", format: link, domains: [example.com] }
+    - { name: lead_stufe, label: "Stufe" }
+    - { name: einschaetzung, label: "Einschätzung des Assistenten", format: langtext }
+    - { name: ausschreibung, label: "Beschreibung", format: langtext }
+  rollen: [betriebs_admin]
+  eingriffe: [entscheiden]
+  fach: { schema: auswahl, mindestens: 3 }
+  # Neue Vorschläge im Posteingang im Kopf; die Zahl steht am eigenen Eintrag in der Hauptnavigation (COPI-121, ab v0.19.0),
+  # nicht mehr unter „Nachrichten".
+  posteingang: { anriss: plattform, zeit: gefunden_am }
+  navigation: haupt
+  agent: assistent
+  statuswoerter: { gelb: "Offen", gruen: "Erledigt" }
+  entscheidung:
+    titel: "Deine Entscheidung"
+    hinweis: "„Vormerken“: Der Assistent schreibt einen Entwurf. „Passt nicht“ sortiert aus und lässt sich zurücknehmen. „Erledigt“ geht auch ohne Entwurf, etwa nach einer Aktion außerhalb des Cockpits; der Assistent legt dann den Eintrag an oder findet den vorhandenen. Alles wird protokolliert."
+    optionen:
+      - { wert: interessant, label: "Vormerken – Entwurf erstellen", kurz: "Vorgemerkt", primaer: true }
+      - { wert: passt_nicht, label: "Passt nicht", kurz: "Passt nicht", wenn: [offen, interessant] }
+      - { wert: beworben, label: "Erledigt – außerhalb abgeschickt", kurz: "Erledigt", primaer: true, wenn: [offen, interessant] }
+    entwurf:
+      spalte: bewerbung
+      fassung: bewerbung_fassung
+      titel: "Entwurf"
+      hinweis: "Der Assistent schickt nichts selbst ab: Das Absenden geschieht außerhalb des Cockpits. Danach „Erledigt“ – der Assistent legt den Eintrag im Fremdsystem an. Änderungswünsche an den Assistenten im Chat."

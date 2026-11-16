@@ -1,0 +1,18 @@
+{
+  "threshold": 1,
+  "reporters": [
+    "console",
+    "badge"
+  ],
+  "ignore": [
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "test/**",
+    "**/*.d.ts"
+  ],
+  "absolute": true,
+  "gitignore": true,
+  "minLines": 5,
+  "minTokens": 50
+}

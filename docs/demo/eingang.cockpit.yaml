@@ -1,0 +1,36 @@
+# Modul „Eingang" (COPI-88): die Vorgänge im Posteingang eines Assistenten (je eingegangener Nachricht eine Zeile, mit Zusammenfassung, Vorschlag und Antwortentwurf zur Freigabe) zur View
+# `docs/demo/v_modul_eingang.sql` über der Fachtabelle aus `docs/demo/fach/eingang/`.
+# `fach:` (COPI-107): eingespielt wird der Block erst, wenn dort mindestens Fachmigration 0004 gebucht ist (Anhänge,
+# COPI-110). Der Mailtext ist ein `langtext`: nur auf der Detailseite, als eigener Abschnitt „Nachricht".
+# Eine Zeile je eingegangener Mail von einem Menschen, mit der Triage des Agenten. Übernehmen sperrt den Vorgang für
+# die Agenten (COPI-85). Noch ohne `uebersicht:` — erst mit COPI-90 (Stand-Wechsel), sonst wäre die Übersicht
+# dauerhaft gelb.
+cockpit:
+  kennung: eingang
+  menuename: "Eingang"
+  ansicht: liste-detail
+  view: v_modul_eingang
+  spalten:
+    - { name: absender, label: "Absender" }
+    - { name: kunde, label: "Zuordnung" }
+    - { name: zusammenfassung, label: "Worum es geht" }
+    - { name: vorschlag, label: "Vorschlag" }
+    - { name: stand, label: "Stand" }
+    - { name: eingang, label: "Eingang", format: zeitpunkt }
+    - { name: postfach, label: "Postfach" }
+    - name: text
+      label: "Nachricht"
+      format: langtext
+      gekuerzt: { spalte: text_gekuerzt, hinweis: "Gekürzt auf 10.000 Zeichen. Der vollständige Text liegt im Postfach." }
+  rollen: [betriebs_admin]
+  eingriffe: [uebernehmen, antwort_freigeben]
+  fach: { schema: eingang, mindestens: 4 }
+  # Posteingang im Kopf und Postfach unter „Nachrichten" (COPI-112, ab Cockpit v0.12.0).
+  posteingang: { anriss: zusammenfassung, zeit: eingang }
+  # Gehört dem Assistenten (COPI-113): seine Detailseite zeigt die Mails und die Übernahmen darin.
+  agent: assistent
+  # Antwort freigeben (COPI-90, ab Cockpit v0.13.0): die jüngste Fassung des Entwurfs; der Assistent sendet erst nach der Freigabe.
+  freigabe: { entwurf: entwurf, fassung: entwurf_fassung, empfaenger: entwurf_an, betreff: entwurf_betreff, gesendet_am: gesendet_am }
+  # Anhänge (COPI-110, ab Cockpit v0.16.0): die Liste unter dem Mailtext ersetzt die frühere Spalte „Anhänge"; Download
+  # nur über die Warnseite, ausführbare Dateien nie.
+  anhaenge: v_modul_eingang_anhaenge

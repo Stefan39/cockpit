@@ -1,0 +1,179 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Detailseite eines Agenten (COPI-113, freigegebener Entwurf): Kopf mit Symbol, Rolle und Stand (Kennung und Version
+  nur mit `technik`), darunter die Reiter als Links (`reiter`) und der gewählte Bereich (`bereich`):
+
+    * steckbrief — Kennzahlen (`kennzahlen`), Grenzen (`karte.grenzen`), Zeitplan, Module, „Zuletzt" (`zuletzt`)
+    * chats      — Gespräche (`chats.liste`) und der Verlauf des gewählten (`chats.nachrichten`, Partial des Chats)
+    * mails      — die Postfächer des Agenten (`mails`, Zeilen aus `postfachAnsicht`)
+    * protokoll  — Filter (`protokoll.chips`, bei „Ereignisse" dazu `protokoll.stufen`) und Zeitleiste (`protokoll.zeilen`)
+    * verbrauch  — nur mit `technik`: Monat, Balken je Tag, je Modell (`verbrauch`)
+
+  Alles aus Inventar, Chat, Fach-View und Befunden ist Fremdtext: escaped, nie verlinkt (JAC-577).
+*/%>
+<div class="agent-seite">
+<div class="seiten-kopf agent-kopf">
+  <div class="agent-kopf-links">
+    <a href="/agenten" class="seiten-zurueck" aria-label="Zurück zu Agenten"><%~ include('partials/symbol', { name: 'zurueck' }) %></a>
+    <span class="agent-initiale" aria-hidden="true"><%= it.initiale %></span>
+    <div class="min-w-0">
+      <p class="seiten-krume"><a href="/agenten">Agenten</a><span aria-hidden="true"> / </span><%= it.titel %></p>
+      <h1><%= it.titel %></h1>
+      <p class="agent-marken">
+        <span class="agent-stand<% if (!it.stand.aktiv) { %> agent-stand-entfernt<% } %>"><span class="punkt punkt-<%= it.stand.aktiv ? 'gruen' : 'unbekannt' %>" aria-hidden="true"></span><%= it.stand.text %></span>
+        <% if (it.technik && it.karte.kennung) { %><code class="agent-kennung"><%= it.karte.kennung %></code><span class="marke">Version <%= it.karte.version %></span><% } %>
+      </p>
+    </div>
+  </div>
+  <div class="seiten-kopf-rechts">
+    <%~ include('partials/darstellung', { pfad: it.nav.pfad, art: 'rund' }) %>
+  </div>
+</div>
+
+<% if (it.kennzahlen) { %>
+<div class="agent-kennzahlen">
+  <div class="agent-kennzahl"><span class="agent-kennzahl-titel">Offene Mails</span><span class="agent-kennzahl-wert<% if (it.kennzahlen.offen > 0) { %> agent-kennzahl-akzent<% } %>"><%= it.kennzahlen.offen %></span><span class="agent-kennzahl-unter"><%= it.module.some((m) => m.postfach) ? 'ungelesen in seinen Postfächern' : 'kein Postfach zugeordnet' %></span></div>
+  <div class="agent-kennzahl"><span class="agent-kennzahl-titel">Nachrichten 7 Tage</span><span class="agent-kennzahl-wert"><%= it.kennzahlen.nachrichten %></span><span class="agent-kennzahl-unter"><%= it.technik ? 'Chat und Agenten' : 'im Chat' %></span></div>
+  <% if (it.kennzahlen.kosten) { %>
+  <div class="agent-kennzahl"><span class="agent-kennzahl-titel">Kosten <%= it.kennzahlen.monat %></span><span class="agent-kennzahl-wert"><%= it.kennzahlen.kosten %></span><span class="agent-kennzahl-unter">Stand <%= it.seitenStand %></span></div>
+  <% } %>
+  <div class="agent-kennzahl"><span class="agent-kennzahl-titel">Fehler 7 Tage</span><span class="agent-kennzahl-wert<% if (it.kennzahlen.fehler > 0) { %> agent-kennzahl-fehler<% } %>"><%= it.kennzahlen.fehler %></span><span class="agent-kennzahl-unter"><%= it.kennzahlen.fehlerZuletzt ? `zuletzt ${it.kennzahlen.fehlerZuletzt.zeit}` : 'vom Agenten gemeldet' %></span></div>
+</div>
+<% } %>
+
+<nav class="agent-reiter" aria-label="Bereiche des Agenten">
+  <% for (const r of it.reiter) { %>
+  <a href="<%= r.href %>"<% if (r.aktuell) { %> aria-current="page"<% } %>><%= r.text %><% if (r.zahl) { %> <span class="chat-zahl"><span aria-hidden="true"><%= r.zahl > 99 ? '99+' : r.zahl %></span><span class="sr-only">, <%= r.zahl %> ungelesen</span></span><% } %></a>
+  <% } %>
+</nav>
+
+<% if (it.bereich === 'steckbrief') { %>
+<div class="agent-raster">
+  <div class="agent-spalte">
+    <section class="agent-karte" aria-labelledby="agent-grenzen">
+      <div class="agent-karte-kopf"><h2 id="agent-grenzen">Grenzen</h2><span class="marke">vom Admin-Agenten gemeldet</span></div>
+      <% if (it.karte.grenzen.length > 0) { %>
+      <dl class="agent-werte">
+        <% for (const grenze of it.karte.grenzen) { %>
+        <div><dt><%= grenze.name %></dt><dd><%= grenze.wert %></dd></div>
+        <% } %>
+      </dl>
+      <% } else { %>
+      <p class="agent-leer agent-karte-leer">Keine Grenzen gemeldet.</p>
+      <% } %>
+    </section>
+    <section class="agent-karte" aria-labelledby="agent-zeitplan">
+      <div class="agent-karte-kopf"><h2 id="agent-zeitplan">Zeitplan</h2></div>
+      <% if (it.zeitplan.length > 0) { %>
+      <dl class="agent-werte">
+        <% for (const takt of it.zeitplan) { %>
+        <div><dt><%= takt.name %></dt><dd><%= takt.wann %></dd></div>
+        <% } %>
+      </dl>
+      <% } else { %>
+      <p class="agent-leer agent-karte-leer">Kein Zeitplan gemeldet.</p>
+      <% } %>
+    </section>
+  </div>
+  <div class="agent-spalte">
+    <section class="agent-karte" aria-labelledby="agent-module">
+      <div class="agent-karte-kopf"><h2 id="agent-module">Module dieses Agenten</h2></div>
+      <% if (it.module.length > 0) { %>
+      <ul class="agent-module">
+        <% for (const modul of it.module) { %>
+        <li><a href="<%= modul.href %>"><%~ include('partials/symbol', { name: modul.postfach ? 'mail' : 'module' }) %><span><%= modul.name %></span><% if (modul.ungelesen > 0) { %><span class="chat-zahl"><span aria-hidden="true"><%= modul.ungelesen %></span><span class="sr-only">, <%= modul.ungelesen %> ungelesen</span></span><% } %><%~ include('partials/symbol', { name: 'weiter' }) %></a></li>
+        <% } %>
+      </ul>
+      <% } else { %>
+      <p class="agent-leer agent-karte-leer">Kein Modul nennt diesen Agenten (<code>agent:</code> im Block).</p>
+      <% } %>
+    </section>
+    <section class="agent-karte" aria-labelledby="agent-zuletzt">
+      <div class="agent-karte-kopf"><h2 id="agent-zuletzt">Zuletzt</h2><a href="?bereich=protokoll" class="agent-karte-link">Protokoll</a></div>
+      <%~ include('partials/agent-protokoll', { zeilen: it.zuletzt, leer: 'In den letzten 30 Tagen ist nichts gemeldet.' }) %>
+    </section>
+  </div>
+</div>
+<% } else if (it.bereich === 'chats') { %>
+<% if (!it.chats || it.chats.liste.length === 0) { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch keine Gespräche', detail: it.technik ? 'Sobald dieser Agent mit anderen Agenten oder im Chat schreibt, erscheint es hier.' : 'Sobald dieser Agent in deinem Chat antwortet, erscheint es hier.' } }) %>
+<% } else { %>
+<div class="agent-chats">
+  <nav class="agent-gespraeche" aria-label="Gespräche">
+    <% for (const g of it.chats.liste) { %>
+    <a href="<%= g.href %>"<% if (g.aktuell) { %> aria-current="page"<% } %>><%~ include('partials/symbol', { name: g.agent ? 'pfeile' : 'chat' }) %><span class="agent-gespraech-text"><span class="agent-gespraech-name"><%= g.name %></span><% if (g.vorschau) { %><span class="agent-gespraech-vorschau"><%= g.vorschau %></span><% } %></span></a>
+    <% } %>
+  </nav>
+  <section class="agent-verlauf" aria-labelledby="agent-verlauf-titel">
+    <div class="agent-karte-kopf"><h2 id="agent-verlauf-titel"><%= it.chats.titel %></h2><% if (it.chats.nurLesen) { %><span class="marke">nur lesen · Agenten unter sich</span><% } %></div>
+    <div class="agent-verlauf-liste chat-liste" role="log" aria-label="Nachrichten">
+      <% for (const nachricht of it.chats.nachrichten) { %>
+      <%~ include('partials/chat-nachricht', { nachricht }) %>
+      <% } %>
+    </div>
+    <% if (it.chats.nurLesen) { %>
+    <p class="agent-hinweis">Menschen lesen hier nur mit. Eingreifen geht über den Assistenten oder die Übernahme eines Vorgangs.</p>
+    <% } %>
+  </section>
+</div>
+<% } %>
+<% } else if (it.bereich === 'mails') { %>
+<% if (it.mails.length === 0) { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Kein Postfach', detail: 'Diesem Agenten ist kein Modul mit Posteingang zugeordnet, das du sehen darfst.' } }) %>
+<% } %>
+<% for (const fach of it.mails) { %>
+<section class="agent-postfach" aria-label="<%= fach.name %>">
+  <p class="agent-postfach-kopf">Aus dem Modul <a href="<%= fach.href %>"><%= fach.name %></a></p>
+  <% if (!fach.verfuegbar) { %>
+  <%~ include('partials/hinweis', { art: 'fehler', text: 'Dieses Postfach ist gerade nicht verfügbar.' }) %>
+  <% } else if (fach.zeilen.length === 0) { %>
+  <p class="chat-leer">Noch keine Einträge in diesem Postfach.</p>
+  <% } else { %>
+  <%~ include('partials/postfach-liste', { zeilen: fach.zeilen }) %>
+  <% } %>
+</section>
+<% } %>
+<% } else if (it.bereich === 'protokoll') { %>
+<nav class="modul-chips" aria-label="Filter">
+  <% for (const chip of it.protokoll.chips) { %>
+  <a href="<%= chip.href %>" class="modul-chip"<% if (chip.aktuell) { %> aria-current="true"<% } %>><%= chip.text %></a>
+  <% } %>
+</nav>
+<% if (it.protokoll.stufen.length > 0) { %>
+<nav class="modul-chips" aria-label="Stufe">
+  <% for (const chip of it.protokoll.stufen) { %>
+  <a href="<%= chip.href %>" class="modul-chip"<% if (chip.aktuell) { %> aria-current="true"<% } %>><%= chip.text %></a>
+  <% } %>
+</nav>
+<% } %>
+<section class="agent-karte agent-protokoll-karte" aria-labelledby="agent-protokoll-titel">
+  <div class="agent-karte-kopf"><h2 id="agent-protokoll-titel">Protokoll · letzte 30 Tage</h2><span class="marke">gemeldet vom Agenten selbst · keine Container-Logs</span></div>
+  <%~ include('partials/agent-protokoll', { zeilen: it.protokoll.zeilen, leer: 'Nichts in den letzten 30 Tagen.' }) %>
+</section>
+<% } else if (it.bereich === 'verbrauch' && it.verbrauch) { %>
+<% if (it.verbrauch.leer) { %>
+<%~ include('partials/status-karte', { status: { farbe: 'leer', satz: 'Noch kein Verbrauch zugeordnet', detail: 'Gezählt wird, was der KI-Verbrauch mit dieser Agenten-Kennung meldet (Feld agent).' } }) %>
+<% } else { %>
+<div class="agent-kennzahlen agent-kennzahlen-drei">
+  <div class="agent-kennzahl"><span class="agent-kennzahl-titel">Kosten <%= it.verbrauch.monatName %></span><span class="agent-kennzahl-wert"><%= it.verbrauch.monat %></span><span class="agent-kennzahl-unter"><%= it.verbrauch.ohnePreis ? 'ohne Einsätze ohne Preis' : 'Stand ' + it.seitenStand %></span></div>
+  <div class="agent-kennzahl"><span class="agent-kennzahl-titel">Einsätze</span><span class="agent-kennzahl-wert"><%= it.verbrauch.einsaetze %></span><span class="agent-kennzahl-unter">davon <%= it.verbrauch.mitSubagent %> mit Subagent</span></div>
+  <div class="agent-kennzahl"><span class="agent-kennzahl-titel">Tokens</span><span class="agent-kennzahl-wert"><%= it.verbrauch.tokens %></span><span class="agent-kennzahl-unter"><%= it.verbrauch.cacheAnteil %> % aus dem Cache gelesen</span></div>
+</div>
+<div class="agent-raster agent-raster-verbrauch">
+  <section class="agent-karte" aria-labelledby="agent-tage">
+    <div class="agent-karte-kopf"><h2 id="agent-tage">Kosten je Tag</h2></div>
+    <div class="agent-diagramm"><%~ include('partials/balken-diagramm', { diagramm: it.verbrauch.diagramm }) %></div>
+  </section>
+  <section class="agent-karte" aria-labelledby="agent-modelle">
+    <div class="agent-karte-kopf"><h2 id="agent-modelle">Je Modell · <%= it.verbrauch.monatName %></h2></div>
+    <dl class="agent-werte">
+      <% for (const m of it.verbrauch.modelle) { %>
+      <div><dt><%= m.modell %></dt><dd><%= m.eur %> · <%= m.anteil %> %</dd></div>
+      <% } %>
+    </dl>
+  </section>
+</div>
+<p class="agent-hinweis">Gezählt wird, was beim KI-Verbrauch mit dieser Agenten-Kennung gemeldet wurde. Alles Weitere unter Module › KI-Verbrauch.</p>
+<% } %>
+<% } %>
+</div>

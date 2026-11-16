@@ -1,0 +1,22 @@
+<%/*
+  Das Wochendiagramm des Dashboards (COPI-81): je Kalendertag (Europe/Berlin) eine gestapelte Säule mit dem Anteil
+  der Stunden rot/gelb/grün (oben rot, unten grün, ohne Daten neutral darüber). Inline-SVG wie die Bänder
+  (`partials/band.eta`): Lage und Höhe nur als Attribute, Farbe als Klasse, kein `style`. `woche.text` ist die
+  Textalternative. Angabe: `woche` (aus `dashboardAnsicht`).
+*/%>
+<section class="woche" aria-labelledby="woche-titel">
+  <div class="abschnitt-zeile">
+    <h2 id="woche-titel">Letzte 7 Tage</h2>
+    <ul class="legende" aria-hidden="true">
+      <li><span class="legende-farbe legende-rot"></span>Störung</li>
+      <li><span class="legende-farbe legende-gelb"></span>Achtung</li>
+      <li><span class="legende-farbe legende-gruen"></span>Läuft</li>
+    </ul>
+  </div>
+  <svg class="woche-diagramm" viewBox="0 0 700 100" preserveAspectRatio="none" role="img" aria-label="<%= it.woche.text %>" focusable="false"><title><%= it.woche.text %></title><% it.woche.tage.forEach((tag, i) => { %><% for (const stueck of tag.stuecke) { %><rect x="<%= i * 100 + 22 %>" y="<%= stueck.y %>" width="56" height="<%= stueck.hoehe %>" class="band-<%= stueck.status %>" /><% } %><% }) %></svg>
+  <ol class="woche-tage" aria-hidden="true">
+    <% for (const tag of it.woche.tage) { %>
+    <li><%= tag.kuerzel %></li>
+    <% } %>
+  </ol>
+</section>

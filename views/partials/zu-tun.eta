@@ -1,0 +1,41 @@
+<%/*
+  Die Reihe „Zu tun" (COPI-122): je Spalte eine Karte mit Symbol, Titel, Zahl, den jüngsten Einträgen und einem Fuß-Link
+  (aus `zuTunAnsicht`, `src/posteingang/zu-tun.ts`). Ungelesenes trägt einen Punkt mit Klartext für Screenreader; ein
+  Status steht als Pille mit Wort. Titel und Anriss sind Fremdtexte: escaped, nie verlinkt außer über das eigene Ziel.
+  Angabe: `spalten`; ohne Spalten entsteht nichts.
+*/%>
+<% if (it.spalten.length > 0) { %>
+<div class="zu-tun">
+  <% for (const [stelle, spalte] of it.spalten.entries()) { %>
+  <section class="aufgaben" aria-labelledby="zu-tun-<%= stelle %>">
+    <div class="aufgaben-kopf">
+      <%~ include('./symbol', { name: spalte.symbol }) %>
+      <h2 id="zu-tun-<%= stelle %>"><%= spalte.titel %></h2>
+      <% if (spalte.zahl) { %><span class="aufgaben-zahl"><%= spalte.zahl %></span><% } %>
+    </div>
+    <% if (spalte.zeilen.length === 0) { %>
+    <p class="aufgaben-leer"><%= spalte.leer %></p>
+    <% } else { %>
+    <ul class="aufgaben-liste">
+      <% for (const zeile of spalte.zeilen) { %>
+      <li>
+        <a href="<%= zeile.href %>" class="aufgaben-zeile">
+          <span class="aufgaben-zeile-kopf">
+            <% if (zeile.neu) { %><span class="aufgaben-neu" aria-hidden="true"></span><span class="sr-only">Neu: </span><% } %>
+            <span class="aufgaben-titel"><%= zeile.titel %></span>
+            <% if (zeile.status) { %><span class="pille pille-<%= zeile.status.farbe %>"><span class="punkt punkt-<%= zeile.status.farbe %>" aria-hidden="true"></span><%= zeile.status.wort %></span><% } %>
+            <% if (zeile.zeit !== '') { %><span class="aufgaben-zeit"><%= zeile.zeit %></span><% } %>
+          </span>
+          <% if (zeile.meta !== '') { %><span class="aufgaben-meta"><%= zeile.meta %></span><% } %>
+        </a>
+      </li>
+      <% } %>
+    </ul>
+    <% } %>
+    <% if (spalte.fuss) { %>
+    <div class="aufgaben-fuss"><a href="<%= spalte.fuss.href %>" class="abschnitt-link"><%= spalte.fuss.text %></a></div>
+    <% } %>
+  </section>
+  <% } %>
+</div>
+<% } %>

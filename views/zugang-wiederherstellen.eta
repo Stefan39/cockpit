@@ -1,0 +1,15 @@
+<% layout('layout') %>
+<h1>Zugang wiederherstellen</h1>
+<p>
+  Neues Passwort für <%= it.email %>. Der bisherige zweite Faktor und das
+  bisherige Passwort sind ungültig; im nächsten Schritt wird ein neuer
+  zweiter Faktor eingerichtet.
+</p>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<form method="post" action="/zugang-wiederherstellen/<%= it.token %>" class="formular">
+  <%~ include('partials/feld', { id: 'passwort', name: 'passwort', typ: 'password', label: `Neues Passwort (mindestens ${it.mindestlaenge} Zeichen)`, minlength: it.mindestlaenge, autocomplete: 'new-password' }) %>
+  <%~ include('partials/feld', { id: 'passwortWiederholung', name: 'passwortWiederholung', typ: 'password', label: 'Passwort wiederholen', minlength: it.mindestlaenge, autocomplete: 'new-password' }) %>
+  <%~ include('partials/knopf', { text: 'Passwort setzen' }) %>
+</form>

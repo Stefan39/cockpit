@@ -1,0 +1,11 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Wenn eine Änderung an einem Konto nicht durchgeht (COPI-46): keine frische Anmeldung, fremde Herkunft, keine gültige
+  Bestätigung, nicht (mehr) erlaubt (403) oder ein Fehler beim Schreiben (500). Angaben: `titel`, `text` (ein fester
+  Satz, nie eine Meldung der Datenbank), `zurueck`.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad }) %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.text }) %>
+<p><a href="<%= it.zurueck %>" class="knopf knopf-sekundaer">Zurück</a></p>
+</div>

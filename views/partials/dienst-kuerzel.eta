@@ -1,0 +1,6 @@
+<%/*
+  Das Kürzel-Quadrat einer Dashboard-Karte (COPI-81) oder einer Modul-Kachel (COPI-82): zwei Buchstaben auf
+  getöntem Zustandsgrund, rein dekorativ (der Titel daneben nennt den Namen). Angaben: `kuerzel`, `farbe`
+  (`rot`/`gelb`/`gruen`/`unbekannt`), optional `gross` (40 statt 32 px — die größere Kachel der Modulseite).
+*/%>
+<span class="dienst-kuerzel dienst-kuerzel-<%= it.farbe %><% if (it.gross) { %> dienst-kuerzel-gross<% } %>" aria-hidden="true"><%= it.kuerzel %></span>

@@ -1,0 +1,1 @@
+<% for (const teil of it.teile) { %><% if (teil.fett && teil.kursiv) { %><strong><em><%= teil.text %></em></strong><% } else if (teil.fett) { %><strong><%= teil.text %></strong><% } else if (teil.kursiv) { %><em><%= teil.text %></em><% } else { %><%= teil.text %><% } %><% } %>

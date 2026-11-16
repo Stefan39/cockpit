@@ -1,0 +1,7 @@
+<% layout('layout') %>
+<h1>Einrichtung fehlgeschlagen</h1>
+<p>
+  Der Zugang konnte nicht angelegt werden. Das verwendete Token ist
+  verbraucht. Bitte das Cockpit neu starten — beim Start wird ein neues
+  Erststart-Token auf der Konsole ausgegeben.
+</p>

@@ -1,0 +1,111 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Anmeldung & Sicherheit (COPI-94, freigegebener Entwurf): die zweiten Faktoren des eigenen Kontos. Angaben:
+  `bestaetigt` (Text des Hinweises, solange die frische Bestätigung gilt), `hinweis`, `fehler`, `passkeys`
+  (je `id`, `name`, `angelegt`), `passkeyMoeglich` (die Instanz hat eine feste Basis-URL), `einziger` (nur ein Faktor:
+  dann gibt es kein „Entfernen"), `totp`, `ersatzcodes` (offene) und `verlauf` (je `zeit`, `text`).
+
+  Alles, was ändert, ist ein Link auf eine eigene Seite: sie verlangt erst die frische Bestätigung durch einen
+  vorhandenen Faktor (`/sicherheit/bestaetigen`) und fragt dann nach. Gerätenamen werden escaped.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/einstellungen', ziel: 'Einstellungen' } }) %>
+<% if (it.hinweis) { %>
+<%~ include('partials/hinweis', { art: 'ok', text: it.hinweis }) %>
+<% } %>
+<% if (it.fehler) { %>
+<%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %>
+<% } %>
+<% if (it.bestaetigt) { %>
+<%~ include('partials/hinweis', { art: 'ok', text: it.bestaetigt }) %>
+<% } else { %>
+<%~ include('partials/hinweis', { art: 'info', text: 'Hinzufügen, Entfernen und neue Ersatzcodes verlangen eine Bestätigung mit einem Faktor, den Sie schon haben – das Passwort allein genügt nicht.' }) %>
+<% } %>
+
+<section class="einstellungen-abschnitt" aria-labelledby="passkeys-titel">
+  <div class="abschnitt-kopf">
+    <h2 id="passkeys-titel">Passkeys</h2>
+  </div>
+  <div class="bereich">
+    <% if (it.passkeys.length > 0) { %>
+    <ul class="push-geraete">
+      <% for (const passkey of it.passkeys) { %>
+      <li class="push-geraet">
+        <div class="min-w-0">
+          <p class="push-geraet-name"><%= passkey.name %></p>
+          <p class="push-geraet-meta">angelegt am <%= passkey.angelegt %></p>
+          <% if (it.einziger) { %>
+          <p class="push-geraet-meta">Einziger Faktor – lässt sich erst entfernen, wenn ein weiterer eingerichtet ist.</p>
+          <% } %>
+        </div>
+        <% if (!it.einziger) { %>
+        <%/* Ein GET-Formular wie bei den Push-Geräten: der Knopf bleibt neben dem Namen schmal; erst die Rückfrage ändert. */%>
+        <form method="get" action="/sicherheit/passkey/<%= passkey.id %>/entfernen">
+          <button type="submit" class="knopf knopf-sekundaer">Entfernen</button>
+        </form>
+        <% } %>
+      </li>
+      <% } %>
+    </ul>
+    <% } else { %>
+    <p class="bereich-satz">Noch kein Passkey eingerichtet.</p>
+    <% } %>
+    <% if (it.passkeyMoeglich) { %>
+    <div class="knopf-reihe"><a href="/sicherheit/passkey" class="knopf knopf-primaer">Passkey auf diesem Gerät hinzufügen</a></div>
+    <p class="bereich-satz">Für ein zweites Gerät (etwa iPhone neben iMac): dort anmelden – zur Not mit einem Ersatzcode – und hier den Passkey anlegen.</p>
+    <% } %>
+  </div>
+</section>
+
+<section class="einstellungen-abschnitt" aria-labelledby="weitere-titel">
+  <div class="abschnitt-kopf">
+    <h2 id="weitere-titel">Weitere Wege</h2>
+  </div>
+  <ul class="bereiche">
+    <li class="bereich">
+      <div class="bereich-kopf">
+        <h3 class="bereich-name">Authenticator-App</h3>
+        <% if (it.totp) { %>
+        <span class="plakette plakette-gruen">Eingerichtet</span>
+        <% } else { %>
+        <span class="plakette plakette-info">Nicht eingerichtet</span>
+        <% } %>
+      </div>
+      <% if (it.totp) { %>
+      <% if (it.einziger) { %>
+      <p class="bereich-satz">Einziger Faktor – lässt sich erst entfernen, wenn ein weiterer eingerichtet ist.</p>
+      <% } else { %>
+      <div class="knopf-reihe"><a href="/sicherheit/totp/entfernen" class="knopf knopf-sekundaer">Entfernen</a></div>
+      <% } %>
+      <% } else { %>
+      <p class="bereich-satz">Sechsstelliger Code aus einer App wie 1Password oder Google Authenticator. Gut als Rückfallweg, wenn kein Gerät mit Passkey zur Hand ist.</p>
+      <div class="knopf-reihe"><a href="/sicherheit/totp" class="knopf knopf-sekundaer">Einrichten</a></div>
+      <% } %>
+    </li>
+    <li class="bereich">
+      <div class="bereich-kopf">
+        <h3 class="bereich-name">Ersatzcodes</h3>
+        <span class="plakette <%= it.ersatzcodes > 3 ? 'plakette-gruen' : 'plakette-gelb' %>"><%= it.ersatzcodes %> von 10 übrig</span>
+      </div>
+      <p class="bereich-satz">Jeder Code gilt einmal und ersetzt jeden zweiten Faktor. Neu erzeugen entwertet alle bisherigen.</p>
+      <div class="knopf-reihe"><a href="/sicherheit/ersatzcodes" class="knopf knopf-sekundaer">Neu erzeugen</a></div>
+    </li>
+  </ul>
+</section>
+
+<% if (it.verlauf.length > 0) { %>
+<section class="einstellungen-abschnitt" aria-labelledby="verlauf-titel">
+  <div class="abschnitt-kopf">
+    <h2 id="verlauf-titel">Letzte Änderungen</h2>
+  </div>
+  <div class="bereich">
+    <dl class="werte">
+      <% for (const eintrag of it.verlauf) { %>
+      <div><dt><%= eintrag.zeit %></dt><dd><%= eintrag.text %></dd></div>
+      <% } %>
+    </dl>
+    <p class="bereich-satz">Aus dem Protokoll, nur das eigene Konto.</p>
+  </div>
+</section>
+<% } %>
+</div>

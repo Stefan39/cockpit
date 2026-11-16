@@ -1,0 +1,14 @@
+<%/*
+  Eine Nachricht im Chat (COPI-53, COPI-56): auf der Seite und als Ereignis im Stream dasselbe Markup. Angabe:
+  `nachricht` (aus `nachrichtAnsicht`). Eigene Nachrichten im Assistenten-Kanal tragen `status`
+  (COPI-69): ein Haken gesendet, zwei angenommen, zwei in Akzentfarbe beantwortet — das Symbol ist dekorativ, der Text
+  daneben (nur für Screenreader) trägt die Bedeutung; das Skript tauscht Stand und Text, wenn die Antwort eintrifft. Der Inhalt wird escaped und nie verlinkt (ADR 10, JAC-577).
+*/%>
+<article class="chat-nachricht<%= it.nachricht.eigen ? ' chat-nachricht-eigen' : '' %>" id="nachricht-<%= it.nachricht.id %>"<% if (it.nachricht.ki) { %> data-chat-antwort<% } %>>
+  <% if (it.nachricht.inhalt === undefined) { %>
+  <p class="chat-blase chat-blase-geloescht">Nachricht gelöscht</p>
+  <% } else { %>
+  <p class="chat-blase<%= it.nachricht.dringend ? ' chat-blase-dringend' : '' %>"><%= it.nachricht.inhalt %></p>
+  <% } %>
+  <p class="chat-meta"><%= it.nachricht.absender %><% if (it.nachricht.ki) { %> · <abbr title="von einer KI erzeugt">KI</abbr><% } %><% if (it.nachricht.dringend) { %> · dringend<% } %> · <time datetime="<%= it.nachricht.zeitIso %>"><%= it.nachricht.zeit %></time><% if (it.nachricht.status) { %> <span class="chat-haken" data-chat-status="<%= it.nachricht.status %>" data-chat-nachricht="<%= it.nachricht.id %>"><span class="chat-haken-eins"><%~ include('symbol', { name: 'haken' }) %></span><span class="chat-haken-zwei"><%~ include('symbol', { name: 'haken-doppelt' }) %></span><span class="sr-only"><%= it.nachricht.status %></span></span><% } %></p>
+</article>

@@ -1,0 +1,12 @@
+<%/* Kopf der Seiten ohne Konto (Anmelden, Erststart, Einlösen): die Wortmarke, bündig mit der Karte darunter. Die angemeldeten Seiten haben stattdessen den App-Rahmen (partials/rahmen.eta, COPI-43). */%>
+<header class="px-4 pb-4 pt-6 sm:pt-10">
+  <div class="mx-auto flex max-w-md items-center gap-2.5">
+    <span class="grid size-8 place-items-center rounded-lg bg-primary text-on-primary" aria-hidden="true">
+      <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 17a8 8 0 1 1 16 0" />
+        <path d="M12 17l3.5-4.5" />
+      </svg>
+    </span>
+    <span class="text-base font-bold tracking-tight text-ink">Cockpit</span>
+  </div>
+</header>

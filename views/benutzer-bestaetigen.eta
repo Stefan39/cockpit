@@ -1,0 +1,33 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Die Bestätigung einer Änderung an einem Konto (COPI-46): ein Schritt gegen Fehlklicks und der Träger der signierten
+  Bestätigung. Angaben: `aktion`, `wert`, `konto` (`name`, `email`, `rolle`), `neueRolle` (bei `rolle`), `pfad`, und für
+  das Formular `bis` und `token`. Erst dieses Formular ändert; „Abbrechen" führt ohne Änderung zurück.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/benutzer', ziel: 'Benutzer' } }) %>
+<section class="bereich" aria-labelledby="bestaetigen-titel">
+  <h2 id="bestaetigen-titel" class="bereich-name"><%= it.konto.name %></h2>
+  <p class="konto-adresse"><%= it.konto.email %> · <%= it.konto.rolle %></p>
+  <% if (it.aktion === 'name') { %>
+  <p class="bereich-satz">Der Name wird geändert in „<%= it.wert %>".</p>
+  <% } else if (it.aktion === 'email') { %>
+  <p class="bereich-satz">Als neue E-Mail-Adresse wird <strong><%= it.wert %></strong> beantragt. Dorthin geht ein Link, der 24 Stunden gültig ist; erst mit ihm gilt die neue Adresse. Die bisherige Adresse bekommt einen Hinweis.</p>
+  <% } else if (it.aktion === 'rolle') { %>
+  <p class="bereich-satz">Die Rolle wird geändert von „<%= it.konto.rolle %>" in „<%= it.neueRolle %>". Das gilt sofort, auch in einer laufenden Sitzung.</p>
+  <% } else if (it.aktion === 'zuruecksetzen') { %>
+  <p class="bereich-satz">Der zweite Faktor wird zurückgesetzt: alle Passkeys, die Authenticator-App und die Ersatzcodes werden entfernt, das Passwort entwertet, offene Sitzungen beendet.</p>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Danach erscheint einmalig ein Link (3 Stunden gültig). Übergeben Sie ihn persönlich, nicht per E-Mail.' }) %>
+  <% } else { %>
+  <p class="bereich-satz">Das Konto wird entfernt. Die Person kann sich danach nicht mehr anmelden; das lässt sich nicht rückgängig machen.</p>
+  <% } %>
+  <form method="post" action="<%= it.pfad %>/bestaetigen" class="knopf-reihe">
+    <input type="hidden" name="aktion" value="<%= it.aktion %>" />
+    <input type="hidden" name="wert" value="<%= it.wert %>" />
+    <input type="hidden" name="bis" value="<%= it.bis %>" />
+    <input type="hidden" name="token" value="<%= it.token %>" />
+    <%~ include('partials/knopf', { text: 'Bestätigen' }) %>
+    <a href="<%= it.pfad %>" class="knopf knopf-sekundaer">Abbrechen</a>
+  </form>
+</section>
+</div>

@@ -1,0 +1,6 @@
+<% layout('layout') %>
+<h1>Einrichtung fehlgeschlagen</h1>
+<p>
+  Der Zugang konnte nicht angelegt werden. Die verwendete Einladung ist
+  verbraucht. Bitte um eine neue Einladung bitten.
+</p>

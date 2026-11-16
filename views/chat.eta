@@ -1,0 +1,133 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Der Chat (COPI-53), wie „Chat" und „Chat – Desktop" im Prototyp: am Desktop die Liste „Verlauf" und daneben der
+  Kanal, mobil nur der Kanal mit einer Umschaltung Assistent/Team im Kopf. Angaben: `titel`, `pfad`, `ki` (Kanal mit
+  dem Assistenten), `kanaele` (`name`, `href`, `aktuell`, `vorschau`, `ungelesen`), `nachrichten` (aus
+  `nachrichtAnsicht`), `aeltere`/`neuere` (Links zum Blättern), `fehler`, `eingabe`, `hoechstens`, `angebunden` (ohne
+  Koordinator nimmt der Assistenten-Kanal nichts an, COPI-54), `antwort` (`wartet`/`ueberfaellig`: die letzte Frage ist
+  noch ohne Antwort), `limit` (Tageslimit im Assistenten-Kanal, COPI-57: `rest`, `erschoepft`, `ab`), `strom` (Adresse der Server-Sent Events, COPI-56; nur auf der jüngsten Seite), `neuVor` (ID der Nachricht, vor der der Trenner "Neu" steht, COPI-69; nur im Assistenten-Kanal).
+
+  Postfächer (COPI-112): `postfaecher` (`name`, `href`, `aktuell`, `ungelesen`) sind die Module mit `posteingang:`, die
+  das Konto sehen darf — am Desktop eine zweite Gruppe in „Verlauf", mobil weitere Chips neben Assistent und Team. Mit
+  `postfach` (`titel`, `unterzeile`, `verfuegbar`, `zeilen` aus `postfachAnsicht`) zeigt die Seite statt eines Kanals
+  dessen Zeilen, jüngste zuerst, Ungelesenes hervorgehoben; jede führt auf ihre Detailseite.
+
+  Jeder Inhalt wird escaped und nie verlinkt: kein Markdown, keine automatische Erkennung von Adressen (ADR 10, JAC-577).
+  Der Verlauf steht in einem Behälter mit umgekehrter Richtung: so zeigt der Browser ohne Skript zuerst das Neueste,
+  die Reihenfolge im Dokument bleibt aber die des Gesprächs.
+*/%>
+<div class="chat">
+  <nav class="chat-kanaele" aria-label="Verlauf">
+    <p class="chat-kanaele-titel">Verlauf</p>
+    <ul>
+      <% for (const kanal of it.kanaele) { %>
+      <li>
+        <a href="<%= kanal.href %>" class="chat-kanal"<% if (kanal.aktuell) { %> aria-current="page"<% } %>>
+          <span class="chat-kanal-name"><%= kanal.name %><% if (kanal.ungelesen > 0) { %> <span class="chat-zahl"><span aria-hidden="true"><%= kanal.ungelesen > 99 ? '99+' : kanal.ungelesen %></span><span class="sr-only">, <%= kanal.ungelesen %> ungelesen</span></span><% } %></span>
+          <% if (kanal.vorschau) { %>
+          <span class="chat-kanal-vorschau"><%= kanal.vorschau %></span>
+          <% } %>
+        </a>
+      </li>
+      <% } %>
+    </ul>
+    <% if ((it.postfaecher ?? []).length > 0) { %>
+    <p class="chat-kanaele-titel chat-kanaele-titel-gruppe">Postfächer</p>
+    <ul>
+      <% for (const fach of it.postfaecher ?? []) { %>
+      <li>
+        <a href="<%= fach.href %>" class="chat-kanal"<% if (fach.aktuell) { %> aria-current="page"<% } %>>
+          <span class="chat-kanal-name"><span class="chat-kanal-fach"><%~ include('partials/symbol', { name: 'mail' }) %><%= fach.name %></span><% if (fach.ungelesen > 0) { %> <span class="chat-zahl"><span aria-hidden="true"><%= fach.ungelesen > 99 ? '99+' : fach.ungelesen %></span><span class="sr-only">, <%= fach.ungelesen %> ungelesen</span></span><% } %></span>
+        </a>
+      </li>
+      <% } %>
+    </ul>
+    <% } %>
+  </nav>
+
+  <section class="chat-fenster" aria-labelledby="chat-titel">
+    <div class="chat-kopf">
+      <div class="min-w-0">
+        <h1 id="chat-titel" class="chat-titel"><%= it.titel %></h1>
+        <% if (it.postfach) { %>
+        <p class="chat-unterzeile"><%= it.postfach.unterzeile %></p>
+        <% } %>
+        <% if (it.ki) { %>
+        <p class="ki-marke"><%~ include('partials/symbol', { name: 'ki' }) %><span>KI-gestützt · Antworten erzeugt eine KI</span></p>
+        <% } %>
+        <nav class="chat-wahl" aria-label="Kanal">
+          <% for (const kanal of it.kanaele) { %>
+          <a href="<%= kanal.href %>" class="chip"<% if (kanal.aktuell) { %> aria-current="true"<% } %>><%= kanal.name %><% if (kanal.ungelesen > 0) { %><span class="sr-only">, <%= kanal.ungelesen %> ungelesen</span><span aria-hidden="true"> · <%= kanal.ungelesen %></span><% } %></a>
+          <% } %>
+          <% for (const fach of it.postfaecher ?? []) { %>
+          <a href="<%= fach.href %>" class="chip"<% if (fach.aktuell) { %> aria-current="true"<% } %>><%= fach.kurz %><% if (fach.ungelesen > 0) { %><span class="sr-only">, <%= fach.ungelesen %> ungelesen</span><span aria-hidden="true"> · <%= fach.ungelesen %></span><% } %></a>
+          <% } %>
+        </nav>
+      </div>
+      <%~ include('partials/darstellung', { pfad: it.pfad, art: 'rund' }) %>
+    </div>
+
+    <% if (it.postfach) { %>
+    <div class="postfach">
+      <% if (!it.postfach.verfuegbar) { %>
+      <%~ include('partials/hinweis', { art: 'fehler', text: 'Dieses Postfach ist gerade nicht verfügbar.' }) %>
+      <% } else if (it.postfach.zeilen.length === 0) { %>
+      <p class="chat-leer">Noch keine Einträge in diesem Postfach.</p>
+      <% } else { %>
+      <%~ include('partials/postfach-liste', { zeilen: it.postfach.zeilen }) %>
+      <% } %>
+    </div>
+    <% } else { %>
+    <div class="chat-verlauf" role="log" aria-label="Nachrichten">
+      <div class="chat-liste"<% if (it.strom) { %> data-chat-strom="<%= it.strom %>"<% } %>>
+        <% if (it.aeltere) { %>
+        <p class="chat-blaettern"><a href="<%= it.aeltere %>">Ältere Nachrichten</a></p>
+        <% } %>
+        <% if (it.nachrichten.length === 0) { %>
+        <p class="chat-leer" data-chat-leer><%= it.ki ? 'Noch keine Nachrichten. Fragen Sie den Assistenten, was im Betrieb los ist.' : 'Noch keine Nachrichten im Team.' %></p>
+        <% } %>
+        <div class="contents" data-chat-nachrichten>
+          <% for (const nachricht of it.nachrichten) { %>
+          <% if (nachricht.id === it.neuVor) { %>
+          <div class="chat-neu" role="separator" aria-label="Neue Nachrichten"><span aria-hidden="true">Neu</span></div>
+          <% } %>
+          <%~ include('partials/chat-nachricht', { nachricht }) %>
+          <% } %>
+        </div>
+        <% if (it.antwort === 'wartet') { %>
+        <p class="chat-hinweis" role="status" data-chat-hinweis>Der Assistent arbeitet an einer Antwort …</p>
+        <% } else if (it.antwort === 'ueberfaellig') { %>
+        <p class="chat-hinweis chat-hinweis-warnung" role="status" data-chat-hinweis>Der Assistent antwortet gerade nicht. Ihre Nachricht ist gespeichert.</p>
+        <% } %>
+        <% if (it.neuere) { %>
+        <p class="chat-blaettern"><a href="<%= it.neuere %>">Zu den neuesten Nachrichten</a></p>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (it.limit && it.limit.erschoepft && !it.fehler) { %>
+    <div class="chat-eingabe">
+      <%~ include('partials/hinweis', { art: 'info', text: `Das Tageslimit für Nachrichten an den Assistenten ist erreicht. Ab ${it.limit.ab} Uhr geht es wieder. Der Team-Kanal funktioniert weiter.` }) %>
+    </div>
+    <% } else if (!it.angebunden) { %>
+    <div class="chat-eingabe">
+      <%~ include('partials/hinweis', { art: 'info', text: 'Auf dieser Instanz ist noch kein Assistent angebunden. Der Team-Kanal funktioniert trotzdem.' }) %>
+    </div>
+    <% } else { %>
+    <form method="post" action="<%= it.pfad %>" class="chat-eingabe">
+      <% if (it.fehler) { %>
+      <div class="chat-fehler"><%~ include('partials/hinweis', { art: 'fehler', text: it.fehler }) %></div>
+      <% } %>
+      <% if (it.limit && it.limit.rest !== undefined) { %>
+      <p class="chat-rest" id="chat-rest">Heute noch <%= it.limit.rest %> <%= it.limit.rest === 1 ? 'Nachricht' : 'Nachrichten' %> an den Assistenten.</p>
+      <% } %>
+      <label for="chat-inhalt" class="sr-only">Nachricht</label>
+      <textarea id="chat-inhalt" name="inhalt" rows="1" maxlength="<%= it.hoechstens %>" required placeholder="Nachricht schreiben …" class="chat-feld"<% if (it.fehler) { %> aria-invalid="true"<% } %><% if (it.limit && it.limit.rest !== undefined) { %> aria-describedby="chat-rest"<% } %>><%= it.eingabe %></textarea>
+      <button type="submit" class="chat-senden" aria-label="Senden"><%~ include('partials/symbol', { name: 'senden' }) %></button>
+    </form>
+    <% } %>
+    <% } %>
+  </section>
+</div>
+<%/* Das Skript auf jeder Chat-Seite (Eingabe, COPI-64); den Stream öffnet es nur, wo `data-chat-strom` steht. */%>
+<script type="module" src="/chat/skript.js"></script>

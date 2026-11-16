@@ -1,0 +1,56 @@
+<%/*
+  Ein Bereich des Dashboards (COPI-122): je Modul mit Karten ein aufklappbarer Abschnitt (`<details>`). Der Kopf fasst
+  zusammen (Pillen „1 Störung", „3 Achtung" und „4 laufen" bzw. „Alle 8 laufen · zuletzt geprüft vor 4 Min."); offen,
+  sobald etwas nicht grün ist (`abschnitt.offen`). Darin volle Karten nur für Gelb und Rot, grüne Karten als kleine
+  Chips (Entscheidung Stefan, 08.10.2026). Ist alles grün, merkt sich der Browser auf/zu (`data-merken`, `pwa.js`);
+  mit offenen Punkten bleibt er immer offen. Angabe: `abschnitt` (aus `dashboardAnsicht`).
+*/%>
+<% const a = it.abschnitt; const z = a.zaehlung; const probleme = a.karten.filter((karte) => karte.wertung !== 'gruen'); const gruene = a.karten.filter((karte) => karte.wertung === 'gruen'); %>
+<details class="klappbereich"<% if (a.offen) { %> open<% } else { %> data-merken="bereich-<%= a.kennung %>"<% } %>>
+  <summary class="klappbereich-kopf">
+    <h2 id="modul-<%= a.kennung %>"><%= a.titel %></h2>
+    <span class="klappbereich-info">
+      <% if (!a.verfuegbar) { %>
+      <span>nicht verfügbar</span>
+      <% } else if (a.karten.length === 0) { %>
+      <span>Noch keine Einträge</span>
+      <% } else if (z.rot + z.gelb === 0) { %>
+      <span class="pille pille-gruen"><span class="punkt punkt-gruen" aria-hidden="true"></span><%= z.gruen === 1 ? 'Läuft' : `Alle ${z.gruen} laufen` %></span><span>· zuletzt geprüft <%= a.geprueft %></span>
+      <% } else { %>
+      <% if (z.rot > 0) { %><span class="pille pille-rot"><span class="punkt punkt-rot" aria-hidden="true"></span><%= z.rot === 1 ? '1 Störung' : `${z.rot} Störungen` %></span><% } %>
+      <% if (z.gelb > 0) { %><span class="pille pille-gelb"><span class="punkt punkt-gelb" aria-hidden="true"></span><%= z.gelb %> Achtung</span><% } %>
+      <% if (z.gruen > 0) { %><span><%= z.gruen %> laufen</span><% } %>
+      <% } %>
+    </span>
+    <a href="<%= a.href %>" class="abschnitt-link klappbereich-link">Alle ansehen<span class="sr-only">: <%= a.titel %></span></a>
+    <span class="aufklapp-pfeil" aria-hidden="true"></span>
+  </summary>
+  <div class="klappbereich-inhalt">
+    <% if (!a.verfuegbar) { %>
+    <%~ include('./hinweis', { art: 'fehler', text: 'Dieses Modul ist gerade nicht verfügbar.' }) %>
+    <% } else if (a.karten.length === 0) { %>
+    <p class="letzte letzte-leer">Noch keine Einträge.</p>
+    <% } else { %>
+    <% if (probleme.length > 0) { %>
+    <ul class="dienste">
+      <% for (const karte of probleme) { %>
+      <%~ include('./dienst-karte', { karte: karte }) %>
+      <% } %>
+    </ul>
+    <% } %>
+    <% if (gruene.length > 0) { %>
+    <div class="klappbereich-gruen">
+      <span><%= probleme.length > 0 ? 'Ebenfalls geprüft, alles in Ordnung:' : 'Alles in Ordnung:' %></span>
+      <ul class="dienst-chips">
+        <% for (const karte of gruene) { %>
+        <li><a href="<%= karte.href %>" class="dienst-chip"><span class="punkt punkt-gruen" aria-hidden="true"></span><%= karte.titel %><span class="sr-only">, <%= karte.status.wort %></span></a></li>
+        <% } %>
+      </ul>
+    </div>
+    <% } %>
+    <% if (a.weitere > 0) { %>
+    <p><a href="<%= a.href %>" class="abschnitt-link">+ <%= a.weitere %> weitere<span class="sr-only"> in <%= a.titel %></span></a></p>
+    <% } %>
+    <% } %>
+  </div>
+</details>

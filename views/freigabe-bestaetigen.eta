@@ -1,0 +1,27 @@
+<% layout('layout', { nav: it.nav }) %>
+<%/*
+  Bestätigung vor „Direkt installieren" (COPI-141) und „Automatisch installieren" (COPI-142): ein Schritt gegen
+  Fehlklicks, denn danach gibt es für diesen Bereich keine Rückfrage in Slack mehr. Angaben: `bereich` (`cockpit`,
+  `module`), `name` und `modus` (`direkt`, `automatisch`). Zurück auf die Rückfrage geht ohne diese Seite.
+*/%>
+<div class="seite-schmal">
+<%~ include('partials/seiten-kopf', { titel: it.titel, instanz: it.instanz, pfad: it.nav.pfad, zurueck: { href: '/einstellungen', ziel: 'Einstellungen' } }) %>
+<section class="bereich" aria-labelledby="bestaetigen-titel">
+  <h2 id="bestaetigen-titel" class="bereich-name">Freigabe: <%= it.name %></h2>
+  <% if (it.modus === 'automatisch') { %>
+  <p class="bereich-satz">Updates für „<%= it.name %>“ künftig automatisch installieren?</p>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Dann stellt das Cockpit den Antrag selbst, sobald die Versions-Wache ein Update meldet, und gibt ihn sofort frei – ohne Klick und ohne Rückfrage in Slack. Der Admin-Agent spielt es ein und meldet nur das Ergebnis.' }) %>
+  <%~ include('partials/hinweis', { art: 'info', text: it.bereich === 'cockpit' ? 'Das Cockpit wird nur dienstags zwischen 7 und 9 Uhr aktualisiert, höchstens einmal am Tag. Ist ein Update gescheitert oder wurde ein automatischer Antrag zurückgezogen, versucht das Cockpit dasselbe Ziel nicht noch einmal.' : 'Module werden jederzeit aktualisiert, je Modul höchstens einmal am Tag. Ist ein Update gescheitert oder wurde ein automatischer Antrag zurückgezogen, versucht das Cockpit dasselbe Ziel nicht noch einmal.' }) %>
+  <% } else { %>
+  <p class="bereich-satz">Updates für „<%= it.name %>“ künftig direkt installieren?</p>
+  <%~ include('partials/hinweis', { art: 'info', text: 'Dann ist die Bestätigung eines Antrags hier im Cockpit zugleich die Freigabe. Es gibt keine Rückfrage in Slack mehr; der Admin-Agent spielt das Update ein und meldet nur das Ergebnis. Ein von Hand gewählter Stand wird weiter in Slack bestätigt. Laufende Anträge behalten ihren Weg, und ein direkt freigegebener lässt sich zurückziehen, bis der Agent beginnt.' }) %>
+  <% } %>
+  <form method="post" action="/einstellungen/freigabe" class="knopf-reihe">
+    <input type="hidden" name="bereich" value="<%= it.bereich %>" />
+    <input type="hidden" name="modus" value="<%= it.modus %>" />
+    <input type="hidden" name="bestaetigt" value="ja" />
+    <%~ include('partials/knopf', { text: it.modus === 'automatisch' ? 'Automatisch installieren einschalten' : 'Direkt installieren einschalten' }) %>
+    <a href="/einstellungen" class="knopf knopf-sekundaer">Abbrechen</a>
+  </form>
+</section>
+</div>
