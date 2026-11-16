@@ -80,6 +80,7 @@ ein Link in `node_modules` ist nicht nötig. Die Ansichten der Erweiterung liege
 des Kerns liest nur sein eigenes `views/`.
 
 **Tests des Verbrauchers** brauchen: die Datenbank-Einrichtung des Kerns als `globalSetup`
-(`node_modules/@stefan39/cockpit/test/global-setup.ts`, braucht `tsx` als Entwicklungsabhängigkeit), `server.deps.inline` für
+(`node_modules/@stefan39/cockpit/test/global-setup.ts`, braucht `tsx` als Entwicklungsabhängigkeit; die Testhilfe `hilfen` liest
+QR-Codes und braucht `jsqr` als Entwicklungsabhängigkeit), `server.deps.inline` für
 `@stefan39/cockpit` in der Vitest-Konfiguration und einen Link vom eigenen `views/<name>/` nach
 `node_modules/@stefan39/cockpit/views/<name>`, damit der Renderer des Kerns die Ansichten findet.
