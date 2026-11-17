@@ -61,17 +61,15 @@ jobs:
           echo "Version $version: $stand" >> "$GITHUB_STEP_SUMMARY"
 
   bauen:
-    name: Image bauen (${{ matrix.variante }}, ${{ matrix.plattform }})
+    name: Image bauen (${{ matrix.plattform }})
     needs: version
     if: needs.version.outputs.stand == 'neu'
     strategy:
       matrix:
         include:
-          - variante: kunde
-            plattform: linux/amd64
+          - plattform: linux/amd64
             runner: ubuntu-latest
-          - variante: kunde
-            plattform: linux/arm64
+          - plattform: linux/arm64
             runner: ubuntu-24.04-arm
     # amd64 auf der devbox (CI_RUNS_ON), arm64 nativ bei GitHub. Der Matrix-Wert bleibt das GitHub-Label, damit der
     # Artefaktname stabil ist.
@@ -125,7 +123,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: digest-${{ matrix.variante }}-${{ matrix.runner }}
+          name: digest-${{ matrix.runner }}
           path: digests/*
           if-no-files-found: error
           retention-days: 1
@@ -161,7 +159,7 @@ jobs:
           # Je Architektur ein Digest (Dateiname). Ohne beide kein Manifest: ein halbes Release wäre für eine
           # der Architekturen kaputt.
           set --
-          for datei in digest-kunde-*/*; do set -- "$@" "$BILD@sha256:${datei##*/}"; done
+          for datei in digest-*/*; do set -- "$@" "$BILD@sha256:${datei##*/}"; done
           test "$#" -eq 2
           docker buildx imagetools create -t "$BILD:$VERSION" \
             --annotation "index:org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
