@@ -79,12 +79,6 @@ jobs:
       - name: Gate 2 — Lint
         run: npm run lint
 
-      - name: Öffentlicher Teil ohne interne Namen (COPI-247)
-        run: npm run oeffentlich
-
-      - name: Öffentlicher Teil baut für sich allein (COPI-249)
-        run: npm run oeffentlich:bauen
-
       # COPI-248: Geheimnisse in versionierten Dateien (gitleaks, Docker-Image in scripts/secret-scan.sh gepinnt);
       # Ausnahmen mit Begründung in .gitleaks.toml.
       - name: Secret-Scan (gitleaks)

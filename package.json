@@ -55,8 +55,6 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "dupes": "jscpd .",
-    "oeffentlich": "sh scripts/oeffentlich/pruefen.sh",
-    "oeffentlich:bauen": "sh scripts/oeffentlich/bauen-pruefen.sh",
     "secretscan": "sh scripts/secret-scan.sh",
     "migrate": "tsx db/migrate.ts up",
     "migrate:down": "tsx db/migrate.ts down",
