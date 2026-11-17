@@ -2396,7 +2396,7 @@ einem Manifest mit dem Versions-Tag zusammen. Der Digest im Release ist der dies
 für beide Architekturen, Docker wählt beim Ziehen die passende. Scheitert einer der Builds, entsteht weder Manifest
 noch Tag.
 
-Das Paket in GHCR ist **privat**; jeder Kundenserver meldet sich mit einem eigenen Lese-Token an. Der ganze Weg
+Das Paket in GHCR ist **öffentlich**; Kundenserver ziehen es ohne Anmeldung (COPI-204). Der ganze Weg
 auf einen Server steht in [`docs/installation.md`](installation.md); `docker/compose.fragment.yaml` und
 `docker/Caddyfile.fragment` sind die einzige Wahrheit für Dienstblock und Routing.
 

@@ -23,29 +23,16 @@ Laufen die Agenten schon als Coolify-Service (mit Traefik statt eigenem Caddy), 
 - **Ein Release existiert:** Version und Digest stehen im GitHub-Release (siehe Handbuch, „Release“). Der Digest gilt für
   amd64 und arm64 (seit COPI-86); ältere Releases gibt es nur für amd64.
 
-## 1. Lese-Token für GHCR (einmal je Server)
+## 1. Image prüfen
 
-Das Image liegt privat in GHCR. Jeder Server meldet sich mit einem **eigenen** Token an, damit ein verlorener
-Server einzeln ausgesperrt werden kann.
+Das Image `ghcr.io/stefan39/cockpit` ist öffentlich (seit 17.11.2026, COPI-204): Kein Server braucht ein Token oder
+`docker login`. Probe mit dem Digest aus dem Release:
 
-1. Als `<ghcr-konto>` unter <https://github.com/settings/tokens/new> ein classic Token anlegen: Name
-   `GHCR-Pull <kuerzel>`, ein Jahr gültig, **nur** den Haken `read:packages`. GHCR nimmt nur classic Tokens; ein
-   fine-grained Token kann keine Pakete lesen.
-2. Auf dem Server, als der Benutzer, der `docker compose` ausführt:
+```bash
+docker pull ghcr.io/stefan39/cockpit@<DIGEST>
+```
 
-   ```bash
-   printf '%s' '<token>' | docker login ghcr.io -u <ghcr-konto> --password-stdin
-   ```
-
-   Das Token landet danach in `~/.docker/config.json`, nur base64-kodiert und nicht verschlüsselt. Die Datei
-   gehört diesem Benutzer und geht niemanden sonst an; das Token darf ohnehin nur lesen und lässt sich einzeln
-   widerrufen.
-
-3. Probe mit dem Digest aus dem Release:
-
-   ```bash
-   docker pull ghcr.io/stefan39/cockpit@<DIGEST>
-   ```
+Ziehen immer per Digest, nie per Tag: Der Digest aus dem Release ist die Angabe, die die Versions-Wache vergleicht.
 
 ## 2. Datenbank: eigene Rolle, eigenes Schema
 
