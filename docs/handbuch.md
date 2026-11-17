@@ -2337,7 +2337,7 @@ dev                                              `./dev up|down|status|test|cove
 docker/                                          Dockerfile, compose.dev.yaml, compose.fragment.yaml, Caddyfile.fragment
 docs/agenten-api.md                              Der Vertrag der Agenten-API für agent-blueprints (Werkzeuge cockpit-api, cockpit-update; COPI-42)
 docs/koordinator-api.md                          Der Vertrag für agent-koordinator: Webhook, Signatur, Antwort, Zustand, Verbrauch (COPI-61)
-docs/installation.md                             Der Weg auf eine Kundeninstanz: Lese-Token, Datenbank, Start, Prüfungen, Update von Hand, Rückweg (COPI-49)
+docs/installation.md                             Der Weg auf eine Kundeninstanz: Image, Datenbank, Start, Prüfungen, Update von Hand, Rückweg (COPI-49)
 docs/pipeline-api.md                             Der Vertrag der Job-Queue der Entwicklungspipeline: Runner-API, Intake durch Koordinator, Server-Kommando (COPI-145)
 docs/modul-vertrag.md                            Der Vertrag für Fachmodule: der `cockpit:`-Block und die SQL-View mit festen Spalten
 .github/scripts/release-version.sh               Entscheidet, ob der Stand auf main ein Release wird (COPI-49)
@@ -2396,7 +2396,7 @@ einem Manifest mit dem Versions-Tag zusammen. Der Digest im Release ist der dies
 für beide Architekturen, Docker wählt beim Ziehen die passende. Scheitert einer der Builds, entsteht weder Manifest
 noch Tag.
 
-Das Paket in GHCR ist **privat**; jeder Kundenserver meldet sich mit einem eigenen Lese-Token an. Der ganze Weg
+Das Paket in GHCR ist **öffentlich**; Kundenserver ziehen es ohne Anmeldung (COPI-204). Der ganze Weg
 auf einen Server steht in [`docs/installation.md`](installation.md); `docker/compose.fragment.yaml` und
 `docker/Caddyfile.fragment` sind die einzige Wahrheit für Dienstblock und Routing.
 
