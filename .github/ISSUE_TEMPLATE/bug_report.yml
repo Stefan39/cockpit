@@ -1,0 +1,44 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Expected vs. actual behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: As few steps as possible, ideally with the demo (`./dev demo`).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Cockpit version
+      description: Release tag or image digest (shown in the footer and in `cockpit.instanz`).
+    validations:
+      required: true
+  - type: input
+    id: umgebung
+    attributes:
+      label: Environment
+      description: Node.js and PostgreSQL version, how you run it (Docker image, Coolify, local).
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant log output
+      render: text
+  - type: checkboxes
+    id: secrets
+    attributes:
+      label: Privacy
+      options:
+        - label: I removed API keys, tokens, passwords and personal data from this report.
+          required: true
