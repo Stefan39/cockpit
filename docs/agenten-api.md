@@ -61,6 +61,8 @@ Seit COPI-145 steuert **Koordinator** die Job-Queue der Entwicklungspipeline; de
 | Eine Freigabe-Anfrage als erledigt markieren | `POST /intern/pipeline/jobs/:id/freigabe-erledigt` | `pipeline_verwalten` |
 | Abgelaufene Leases aufräumen, geparkte Jobs erfahren | `POST /intern/pipeline/aufraeumen` | `pipeline_verwalten` |
 | KI-Verbrauch eines Tickets über alle Jobs summiert lesen | `GET /intern/pipeline/verbrauch` (Abfrage `ticket`) | `pipeline_verwalten` |
+| Aufwand aus der Zeiterfassung melden (ein Eintrag oder `eintraege`) | `POST /intern/pipeline/aufwand` | `pipeline_verwalten` |
+| Merkmale eines Tickets melden (Aufgabentyp, Stack, geänderte Zeilen) | `POST /intern/pipeline/merkmal` | `pipeline_verwalten` |
 
 ## Verbindung
 

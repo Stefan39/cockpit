@@ -236,6 +236,8 @@ export const ROUTEN: Readonly<Record<string, KategorieName>> = {
   'POST /intern/pipeline/jobs/:id/freigabe-erledigt': 'maschinell',
   'POST /intern/pipeline/aufraeumen': 'maschinell',
   'GET /intern/pipeline/verbrauch': 'maschinell',
+  'POST /intern/pipeline/aufwand': 'maschinell',
+  'POST /intern/pipeline/merkmal': 'maschinell',
   'POST /pipeline/claim': 'signiert',
   'POST /pipeline/heartbeat': 'signiert',
   'POST /pipeline/event': 'signiert',

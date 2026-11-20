@@ -45,6 +45,7 @@ import { registriereChatAntwortRoute } from './chat.js';
 import { registriereEingriffRouten } from './eingriffe.js';
 import { registriereKiVerbrauchRoute } from './ki-verbrauch.js';
 import { registrierePipelineRouten } from './pipeline.js';
+import { registrierePipelineAufwandRouten } from './pipeline-aufwand.js';
 import { registrierePipelineVerbrauchRouten } from './pipeline-verbrauch.js';
 import { registriereVerbrauchRoute } from './verbrauch.js';
 import { registriereVorgangRoute } from './vorgaenge.js';
@@ -319,6 +320,7 @@ export function registriereInternApi(
       registriereWechselkursRoute(router, abhaengigkeiten);
       registrierePipelineRouten(router, abhaengigkeiten);
       registrierePipelineVerbrauchRouten(router, abhaengigkeiten);
+      registrierePipelineAufwandRouten(router, abhaengigkeiten);
 
       ergaenzen?.(router);
     },
