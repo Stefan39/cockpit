@@ -45,8 +45,8 @@ describe.skipIf(!testDatenbankUrl)('Aufwand, Merkmale und Kalkulation je Ticket 
     return { status: antwort.statusCode, json: antwort.json() as Record<string, unknown>, body: antwort.body };
   }
 
-  async function job(ticketKey: string, kind: JobArt): Promise<string> {
-    const angelegt = await jobAnlegen(pool, { ticketKey, repo: REPO, kind }, JETZT);
+  async function job(ticketKey: string, kind: JobArt, payload?: Record<string, unknown>): Promise<string> {
+    const angelegt = await jobAnlegen(pool, { ticketKey, repo: REPO, kind, payload }, JETZT);
     if (angelegt.art === 'repo_unbekannt') {
       throw new Error('Repo fehlt');
     }
@@ -294,6 +294,7 @@ describe.skipIf(!testDatenbankUrl)('Aufwand, Merkmale und Kalkulation je Ticket 
         minutenGesamt: 45,
         reviewRunden: 0,
         nacharbeitRunden: 0,
+        konfliktRunden: 0,
         ergebnis: 'offen',
         costEurNotional: null,
         costEurReal: null,
@@ -321,7 +322,18 @@ describe.skipIf(!testDatenbankUrl)('Aufwand, Merkmale und Kalkulation je Ticket 
         minutenGesamt: 100 + 34,
         reviewRunden: 2,
         nacharbeitRunden: 1,
+        konfliktRunden: 0,
       });
+    });
+
+    it('zählt einen Rework zum Abgleich mit der Basis als Konflikt, nicht als Nacharbeit', async () => {
+      await job('COPI-1', 'implement');
+      for (const payload of [{ basis_abgleich: true, basis_sha: 'abc' }, { basis_abgleich: false }, { basis_abgleich: 'true' }]) {
+        const id = await job('COPI-1', 'rework', payload);
+        await pool.query(`UPDATE cockpit.pipeline_job SET status = 'done' WHERE id = $1`, [id]);
+      }
+
+      expect(await zeile('COPI-1')).toMatchObject({ nacharbeitRunden: 2, konfliktRunden: 1 });
     });
 
     it('wertet nur die Ereignisse des eigenen Tickets', async () => {
