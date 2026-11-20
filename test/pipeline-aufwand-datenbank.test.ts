@@ -108,7 +108,7 @@ describe.skipIf(!testDatenbankUrl)('Aufwand, Merkmale und Kalkulation je Ticket 
       ]);
 
     it.each([
-      ['unbekannte Quelle', `INSERT INTO cockpit.pipeline_aufwand (ticket_key, quelle, extern_id, tag, minuten) VALUES ('T', 'mite', 'x', '2026-11-17', 1)`],
+      ['unbekannte Quelle', `INSERT INTO cockpit.pipeline_aufwand (ticket_key, quelle, extern_id, tag, minuten) VALUES ('T', 'kalender', 'x', '2026-11-17', 1)`],
       ['negative Minuten', `INSERT INTO cockpit.pipeline_aufwand (ticket_key, quelle, extern_id, tag, minuten) VALUES ('T', 'manuell', 'x', '2026-11-17', -1)`],
       ['mehr als ein Tag', `INSERT INTO cockpit.pipeline_aufwand (ticket_key, quelle, extern_id, tag, minuten) VALUES ('T', 'manuell', 'x', '2026-11-17', 1441)`],
       ['leere extern_id', `INSERT INTO cockpit.pipeline_aufwand (ticket_key, quelle, extern_id, tag, minuten) VALUES ('T', 'manuell', '', '2026-11-17', 1)`],
@@ -197,7 +197,7 @@ describe.skipIf(!testDatenbankUrl)('Aufwand, Merkmale und Kalkulation je Ticket 
 
     it.each([
       ['unbekanntes Feld', { zusatz: 1 }],
-      ['unbekannte Quelle', { quelle: 'mite' }],
+      ['unbekannte Quelle', { quelle: 'kalender' }],
       ['kein Kalendertag', { tag: '2026-02-30' }],
       ['gebrochene Minuten', { minuten: 1.5 }],
     ])('weist ab: %s', async (_name, extra) => {
