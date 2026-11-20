@@ -33,6 +33,7 @@ Alle Bilder stammen aus einer lokalen Demo-Instanz mit erfundenen Daten (`./dev 
 | `COCKPIT_IMAGE_DIGEST` | in Produktion | Digest des laufenden Images (`sha256:…`), derselbe Wert wie in der `image:`-Zeile. Das Cockpit meldet ihn beim Start nach `cockpit.instanz` (COPI-39); ohne ihn lässt sich ein Update nicht bestätigen. Fehlt er oder ist er kaputt, bleibt er leer, mit Hinweis im Log |
 | `COCKPIT_KOORDINATOR_URL`, `COCKPIT_KOORDINATOR_SECRET` | für den Assistenten | Webhook des Koordinator-Agenten in n8n und das gemeinsame Geheimnis der Signatur (mind. 32 Zeichen), beide oder keins (COPI-54). Ohne beide sagt der Chat, dass kein Assistent angebunden ist |
 | `COCKPIT_PIPELINE_SECRET` | für die Entwicklungspipeline | Gemeinsames Geheimnis mit dem Runner (mind. 32 Zeichen), HMAC über den Rumpf (COPI-145, [`docs/pipeline-api.md`](pipeline-api.md)). Ohne Wert nimmt `/pipeline` nichts an |
+| `COCKPIT_PIPELINE_PAUSCHALE_FREIGABE_MIN`, `COCKPIT_PIPELINE_PAUSCHALE_ESKALATION_MIN` | nein | Minuten, die die Kalkulation je Freigabe (Standard 5) und je Eskalation (Standard 15) zum erfassten Aufwand rechnet (COPI-254, [`docs/pipeline-api.md`](pipeline-api.md)). Nur ganze Zahlen von 0 bis 240, alles andere ergibt den Standard |
 | `COCKPIT_KOORDINATOR_FRIST` | nein | Sekunden, bis eine ausbleibende Antwort im Verlauf steht (Standard 120) |
 | `COCKPIT_CHAT_TAGESLIMIT` | nein | Nachrichten an den Assistenten je Konto und Tag (Standard 50, COPI-57) |
 | `COCKPIT_CHAT_MAIL_NACH_MINUTEN` | nein | Nach wie vielen Minuten eine dringende, ungelesene Nachricht per E-Mail gemeldet wird (Standard 15, COPI-60) |
@@ -1972,6 +1973,8 @@ HEAD verhält sich wie GET.
 | `POST /intern/pipeline/jobs/:id/freigabe-erledigt` | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) |
 | `POST /intern/pipeline/aufraeumen` | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) |
 | `GET /intern/pipeline/verbrauch` | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) |
+| `POST /intern/pipeline/aufwand` | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) |
+| `POST /intern/pipeline/merkmal` | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) | 401 (Bearer-Token nötig) |
 | `POST /pipeline/claim` | 401 (Signatur nötig) | 401 (Signatur nötig) | 401 (Signatur nötig) |
 | `POST /pipeline/heartbeat` | 401 (Signatur nötig) | 401 (Signatur nötig) | 401 (Signatur nötig) |
 | `POST /pipeline/event` | 401 (Signatur nötig) | 401 (Signatur nötig) | 401 (Signatur nötig) |

@@ -73,6 +73,7 @@ Der Dienstblock liest diese Werte aus der `.env` neben der `compose.yaml`:
 | `COCKPIT_KOORDINATOR_SECRET` | `openssl rand -base64 32`, je Instanz eigen; dasselbe Geheimnis prüft der Workflow. Mit der URL zusammen oder gar nicht |
 | `COCKPIT_PIPELINE_SECRET` | nur auf Stefans eigener Instanz (Entwicklungspipeline, COPI-145): `openssl rand -base64 32`, dasselbe Geheimnis bekommt der Runner. Ohne Wert nimmt `/pipeline` nichts an |
 | `COCKPIT_AUTO_MERGE_SPERRLISTE` | optional, nur mit Entwicklungspipeline: kommagetrennte Repos (`owner/name`), für die `auto_merge` nie erlaubt ist (Standard: leer) |
+| `COCKPIT_PIPELINE_PAUSCHALE_FREIGABE_MIN`, `COCKPIT_PIPELINE_PAUSCHALE_ESKALATION_MIN` | optional, nur mit Entwicklungspipeline: Minuten je Freigabe (Standard 5) und je Eskalation (Standard 15) in der Kalkulation; ganze Zahlen 0 bis 240, sonst Standard |
 | `COCKPIT_KOORDINATOR_FRIST` | optional, Sekunden bis „Der Assistent antwortet gerade nicht" (Standard 120) |
 | `COCKPIT_CHAT_TAGESLIMIT` | optional, Nachrichten an den Assistenten je Konto und Tag (Standard 50) |
 | `COCKPIT_CHAT_MAIL_NACH_MINUTEN` | optional, Minuten bis eine dringende, ungelesene Nachricht per E-Mail gemeldet wird (Standard 15; braucht SMTP) |

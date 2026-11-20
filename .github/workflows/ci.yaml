@@ -35,7 +35,7 @@ jobs:
           - 5432
         options: >-
           --tmpfs /var/lib/postgresql/data
-          --health-cmd "pg_isready -U cockpit"
+          --health-cmd "pg_isready -h 127.0.0.1 -U cockpit"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -220,11 +220,13 @@ jobs:
           docker network create "$SMOKE_NETZ" >/dev/null
           docker run -d --name "$SMOKE_NETZ-db" --network "$SMOKE_NETZ" \
             -e POSTGRES_USER=cockpit -e POSTGRES_PASSWORD=cockpit -e POSTGRES_DB=cockpit postgres:16-alpine >/dev/null
+          # Über TCP prüfen: Während der Erstinitialisierung meldet der Hilfsserver am Socket kurz „accepting" und startet
+          # danach neu; die zweite Prüfung traf dann auf „rejecting connections" (COPI-254, Lauf 44710716995).
           for _ in $(seq 1 60); do
-            docker exec "$SMOKE_NETZ-db" pg_isready -U cockpit -d cockpit >/dev/null 2>&1 && break
+            docker exec "$SMOKE_NETZ-db" pg_isready -h 127.0.0.1 -U cockpit -d cockpit >/dev/null 2>&1 && break
             sleep 1
           done
-          docker exec "$SMOKE_NETZ-db" pg_isready -U cockpit -d cockpit
+          docker exec "$SMOKE_NETZ-db" pg_isready -h 127.0.0.1 -U cockpit -d cockpit
           export SMOKE_URL="http://127.0.0.1:${SMOKE_PORT}"
           SMOKE_VERSION="0.0.0-ci+${GITHUB_SHA:0:7}" sh docker/smoke-schema.sh cockpit:ci "postgres://cockpit:cockpit@${SMOKE_NETZ}-db:5432/cockpit" \
             --network "$SMOKE_NETZ" -p "127.0.0.1:${SMOKE_PORT}:3000"

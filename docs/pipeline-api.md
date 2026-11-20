@@ -250,6 +250,36 @@ Jira-Kommentar schreiben kann. `ticket` ist Pflicht (1–200 Zeichen), sonst `40
 Zeile einen Wert, bleibt der Wert `null` (unbekannt, nicht 0). Ein Ticket ohne Verbrauch ist kein Fehler: `jobs: 0`,
 leere `je_werkzeug`, Summen 0.
 
+### `POST /intern/pipeline/aufwand`
+
+Meldet erfassten Aufwand (COPI-254), Grundlage der Kalkulation je Ticket. Der Rumpf ist **ein Eintrag** oder `{"eintraege": [ … ]}` mit
+1 bis 200 Einträgen; mehrere gelten ganz oder gar nicht.
+
+```json
+{ "ticket_key": "COPI-123", "quelle": "zeiterfassung", "extern_id": "4711", "tag": "2026-11-17", "minuten": 90 }
+```
+
+`quelle`: `zeiterfassung` oder `manuell`; `extern_id`: 1–200 Zeichen, die Kennung des Eintrags in der Quelle; `tag`: ein echter
+Kalendertag, höchstens der morgige; `minuten`: 0–1440. Jede (`quelle`, `extern_id`) steht höchstens einmal in einer Meldung (sonst `400`).
+**Upsert:** dieselbe (`quelle`, `extern_id`) noch einmal überschreibt Ticket, Tag und Minuten, weil sich ein Eintrag der Zeiterfassung nachträglich ändern
+kann. Entfernt wird ein Eintrag nie, er wird mit `minuten: 0` aus der Summe genommen. Antwort `200 {"angelegt":1,"geaendert":0,"unveraendert":0}`;
+Fehler `400 {"fehler":"ungueltige_anfrage","felder":[…]}` nennen nur Feldnamen.
+
+### `POST /intern/pipeline/merkmal`
+
+Meldet die Merkmale eines Tickets (COPI-254): `{"ticket_key": "COPI-123", "aufgabentyp": "feature", "stack": ["php", "c#"], "geaenderte_zeilen": 240}`.
+Mindestens ein Feld neben `ticket_key`. `aufgabentyp`: `bugfix`, `feature`, `skript`, `wordpress-plugin`, `datenkonvertierung` oder `doku`
+(`null` leert ihn); `stack`: höchstens 10 Marken, je `^[a-z0-9][a-z0-9.+#-]{0,39}$`, ersetzt die bisherige Liste; `geaenderte_zeilen`: ganze Zahl ab 0.
+**Nicht genannte Felder bleiben erhalten.** Antwort `200` mit dem gespeicherten Stand (`ticket_key`, `aufgabentyp`, `stack`, `geaenderte_zeilen`).
+
+### Kalkulation je Ticket (`@stefan39/cockpit/pipeline/kalkulation`, COPI-254)
+
+`ticketKalkulation(pool, pauschalenAus(process.env))` liest je Ticket aus Jobs, Aufwand und Merkmalen: erfasste Minuten, Freigaben (Ereignisse
+`merge.approval_requested`), Eskalationen (Statuswechsel eines Jobs nach `parked`), die Pauschale daraus (je Freigabe `COCKPIT_PIPELINE_PAUSCHALE_FREIGABE_MIN`,
+Standard 5; je Eskalation `COCKPIT_PIPELINE_PAUSCHALE_ESKALATION_MIN`, Standard 15), Review- und Nacharbeitsrunden, das Ergebnis
+(`gemergt` und `abgebrochen` nach dem Grund von `merge.erledigt`, sonst `eskaliert` bei einem geparkten Job, sonst `offen`) und die KI-Kosten
+(real nur bei `billing = 'api'`). Rein lesend, sortiert nach `ticket_key`.
+
 ## Teil 3: Betreuer — Server-Kommando
 
 ```sh
