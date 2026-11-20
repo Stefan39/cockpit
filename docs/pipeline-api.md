@@ -276,7 +276,8 @@ Mindestens ein Feld neben `ticket_key`. `aufgabentyp`: `bugfix`, `feature`, `skr
 
 `ticketKalkulation(pool, pauschalenAus(process.env))` liest je Ticket aus Jobs, Aufwand und Merkmalen: erfasste Minuten, Freigaben (Ereignisse
 `merge.approval_requested`), Eskalationen (Statuswechsel eines Jobs nach `parked`), die Pauschale daraus (je Freigabe `COCKPIT_PIPELINE_PAUSCHALE_FREIGABE_MIN`,
-Standard 5; je Eskalation `COCKPIT_PIPELINE_PAUSCHALE_ESKALATION_MIN`, Standard 15), Review- und Nacharbeitsrunden, getrennt davon die
+Standard 5; je Eskalation `COCKPIT_PIPELINE_PAUSCHALE_ESKALATION_MIN`, Standard 15), Review-Runden (höchste `data.round` aus `review.round_done`/`review.clean`
+aller Jobs des Tickets, oder die Zahl der `review:*`-Jobs, wenn höher), Nacharbeitsrunden, getrennt davon die
 Konfliktrunden (Rework-Jobs mit `payload.basis_abgleich = true`, die nur den Basis-Branch einarbeiten; COPI-255), das Ergebnis
 (`gemergt` und `abgebrochen` nach dem Grund von `merge.erledigt`, sonst `eskaliert` bei einem geparkten Job, sonst `offen`) und die KI-Kosten
 (real nur bei `billing = 'api'`). Rein lesend, sortiert nach `ticket_key`.
