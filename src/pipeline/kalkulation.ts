@@ -8,6 +8,11 @@
  *   * **Freigaben:** Ereignisse `merge.approval_requested` aller Jobs des Tickets (`freigaben.ts`).
  *   * **Eskalationen:** Statuswechsel eines Jobs nach `parked` — Ereignis `status` mit `data.nach = 'parked'`
  *     (`queue.ts`, `statusNotieren`: abgelaufene Leases und fehlgeschlagene Abschlüsse über `max_attempts`).
+ *   * **Review-Runden:** die höchste `data.round` aus `review.round_done` und `review.clean` aller Jobs des Tickets; der
+ *     Runner zählt die Runden je PR über Jobs hinweg weiter. Laufen Reviews als eigene Jobs (`review:*`), zählt deren
+ *     Anzahl, wenn sie höher ist.
+ *   * **Nacharbeit:** Rework-Jobs ohne `payload.basis_abgleich = true`. Mit diesem Wert arbeitet ein Rework nur den
+ *     Basis-Branch ein (etwa bei einem Merge-Konflikt) und zählt als **Konfliktrunde** (COPI-255).
  *   * **Ergebnis** mit Vorrang: `merge.erledigt` mit `data.grund = 'gemergt'` → `gemergt`; mit `geschlossen` → `abgebrochen`;
  *     sonst ein Job, der jetzt `parked` ist → `eskaliert`; sonst `offen`.
  *   * **KI-Kosten:** rechnerisch (`cost_eur_notional`) über alle Läufe, real (`cost_eur_real`) nur bei `billing = 'api'`
@@ -59,7 +64,10 @@ export interface TicketKalkulation {
   readonly minutenPauschale: number;
   readonly minutenGesamt: number;
   readonly reviewRunden: number;
+  /** Rework-Jobs nach einem Review; ohne die Abgleiche mit der Basis (siehe `konfliktRunden`). */
   readonly nacharbeitRunden: number;
+  /** Rework-Jobs, die nur den Basis-Branch einarbeiten (`payload.basis_abgleich = true`, etwa bei einem Merge-Konflikt). */
+  readonly konfliktRunden: number;
   readonly ergebnis: TicketErgebnis;
   readonly costEurNotional: number | null;
   readonly costEurReal: number | null;
@@ -75,6 +83,7 @@ interface KalkulationsZeile {
   eskalationen: number;
   review_runden: number;
   nacharbeit_runden: number;
+  konflikt_runden: number;
   ergebnis: TicketErgebnis;
   cost_eur_notional: string | null;
   cost_eur_real: string | null;
@@ -91,7 +100,8 @@ const ABFRAGE = `
   ), jobs AS (
     SELECT ticket_key,
            (count(*) FILTER (WHERE kind LIKE 'review:%'))::int AS review_runden,
-           (count(*) FILTER (WHERE kind = 'rework'))::int AS nacharbeit_runden,
+           (count(*) FILTER (WHERE kind = 'rework' AND NOT coalesce(payload -> 'basis_abgleich' = 'true'::jsonb, false)))::int AS nacharbeit_runden,
+           (count(*) FILTER (WHERE kind = 'rework' AND payload -> 'basis_abgleich' = 'true'::jsonb))::int AS konflikt_runden,
            coalesce(bool_or(status = 'parked'), false) AS geparkt
       FROM cockpit.pipeline_job GROUP BY ticket_key
   ), ereignisse AS (
@@ -99,7 +109,9 @@ const ABFRAGE = `
            (count(*) FILTER (WHERE e.type = 'merge.approval_requested'))::int AS freigaben,
            (count(*) FILTER (WHERE e.type = 'status' AND e.data->>'nach' = 'parked'))::int AS eskalationen,
            coalesce(bool_or(e.type = 'merge.erledigt' AND e.data->>'grund' = 'gemergt'), false) AS gemergt,
-           coalesce(bool_or(e.type = 'merge.erledigt' AND e.data->>'grund' = 'geschlossen'), false) AS geschlossen
+           coalesce(bool_or(e.type = 'merge.erledigt' AND e.data->>'grund' = 'geschlossen'), false) AS geschlossen,
+           max((e.data->>'round')::int) FILTER (WHERE e.type IN ('review.round_done', 'review.clean')
+                                                  AND e.data->>'round' ~ '^[0-9]{1,9}$') AS review_runde
       FROM cockpit.pipeline_job_event e JOIN cockpit.pipeline_job j ON j.id = e.job_id
      GROUP BY j.ticket_key
   ), kosten AS (
@@ -110,8 +122,9 @@ const ABFRAGE = `
          coalesce(a.minuten, 0) AS minuten_erfasst,
          coalesce(e.freigaben, 0) AS freigaben,
          coalesce(e.eskalationen, 0) AS eskalationen,
-         coalesce(j.review_runden, 0) AS review_runden,
+         greatest(coalesce(j.review_runden, 0), coalesce(e.review_runde, 0)) AS review_runden,
          coalesce(j.nacharbeit_runden, 0) AS nacharbeit_runden,
+         coalesce(j.konflikt_runden, 0) AS konflikt_runden,
          CASE WHEN coalesce(e.gemergt, false) THEN 'gemergt'
               WHEN coalesce(e.geschlossen, false) THEN 'abgebrochen'
               WHEN coalesce(j.geparkt, false) THEN 'eskaliert'
@@ -146,6 +159,7 @@ export async function ticketKalkulation(pool: pg.Pool, pauschalen: Pauschalen): 
       minutenGesamt: z.minuten_erfasst + minutenPauschale,
       reviewRunden: z.review_runden,
       nacharbeitRunden: z.nacharbeit_runden,
+      konfliktRunden: z.konflikt_runden,
       ergebnis: z.ergebnis,
       costEurNotional: zahl(z.cost_eur_notional),
       costEurReal: zahl(z.cost_eur_real),
